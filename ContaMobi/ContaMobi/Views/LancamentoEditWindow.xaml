@@ -1,0 +1,199 @@
+<Window
+    x:Class="ContaMobi.Views.LancamentoEditWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="CONTA MOBI // INCLUIR LANCAMENTOS">
+
+    <Grid Background="#000000" Padding="16">
+        <Border BorderBrush="#00FF66" BorderThickness="1" Background="#030A03" Padding="16">
+            <Grid RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- TÍTULO -->
+                <StackPanel Grid.Row="0" Spacing="2">
+                    <TextBlock Text="[ MOVIMENTACAO // INCLUIR LANCAMENTOS EM CONTA CORRENTE ]" FontSize="14" FontWeight="Bold" Foreground="#00FF66"/>
+                    <TextBlock Text="------------------------------------------------------------------------------------------------" FontSize="11" Foreground="#006622"/>
+                </StackPanel>
+
+                <!-- MENSAGEM DE STATUS / ERRO -->
+                <TextBlock Grid.Row="1" x:Name="TxtMensagem" FontSize="11" Foreground="#FF5555" TextWrapping="Wrap" Visibility="Collapsed"/>
+
+                <!-- BOX 1 (SUPERIOR): SELEÇÃO DA CONTA CORRENTE -->
+                <Border Grid.Row="2" BorderBrush="#008833" BorderThickness="1" Background="#051405" Padding="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="SELECIONE A CONTA CORRENTE PARA EFETUAR OS LANCAMENTOS (*):" FontSize="11" FontWeight="Bold" Foreground="#00FF66"/>
+                        <ComboBox x:Name="CboContaCorrente" HorizontalAlignment="Stretch" Height="36"
+                                  PlaceholderText="Escolha uma conta corrente..."
+                                  SelectionChanged="CboContaCorrente_SelectionChanged"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- BOX 2 (CENTRAL): CAMPOS DO LANÇAMENTO -->
+                <Border Grid.Row="3" BorderBrush="#005522" BorderThickness="1" Background="#020802" Padding="14">
+                    <StackPanel Spacing="12">
+
+                        <!-- LINHA 1: DATA E SALDO ANTERIOR (NÃO EDITÁVEL E COM FONTE DESTACADA) -->
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="DATA DO LANCAMENTO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                <TextBox x:Name="TxtDataLancamento" MaxLength="10" PlaceholderText="dd/mm/aaaa" Height="36"
+                                         TextChanged="TxtDataLancamento_TextChanged" LostFocus="TxtDataLancamento_LostFocus"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="SALDO IMEDIATAMENTE ANTERIOR DA CONTA (NAO EDITAVEL):" FontSize="10" FontWeight="SemiBold" Foreground="#00AA44"/>
+                                <Border BorderBrush="#00FF66" BorderThickness="1" Background="#051805" Height="36" Padding="14,0">
+                                    <TextBlock x:Name="TxtSaldoAnterior" Text="Saldo Anterior..: R$ 0,00"
+                                               FontSize="16" FontWeight="Bold" Foreground="#00FF66"
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- LINHA 2: TIPO (D OU C) E CATEGORIA (COMBO INDENTADO) COM BOTÃO [+] ADD -->
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="210"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="TIPO (D OU C) (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                <ComboBox x:Name="CboTipo" HorizontalAlignment="Stretch" Height="34"
+                                          PlaceholderText="Selecione D ou C..."
+                                          SelectionChanged="CboTipo_SelectionChanged">
+                                    <ComboBoxItem Content="D - DEBITO (SAIDA)" Tag="D"/>
+                                    <ComboBoxItem Content="C - CREDITO (ENTRADA)" Tag="C"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock x:Name="LblCategoria" Text="CATEGORIA (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <ComboBox Grid.Column="0" x:Name="CboCategoria"
+                                              HorizontalAlignment="Stretch" Height="34"
+                                              PlaceholderText="Selecione a categoria..."
+                                              IsEnabled="False"/>
+
+                                    <Button Grid.Column="1" x:Name="BtnAddCategoria" Content="[+] ADD" Click="BtnAddCategoria_Click"
+                                            IsEnabled="False" Height="34" Padding="12,0"
+                                            Style="{StaticResource PrimaryTerminalButtonStyle}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- CAMPOS ABAIXO QUE FICAM DESABILITADOS ENQUANTO NÃO ESCOLHER O TIPO (D OU C) -->
+                        <ContentControl x:Name="PainelCamposDependentes" IsEnabled="False" IsTabStop="False"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                            <StackPanel Spacing="12">
+
+                                <!-- LINHA 3: DESCRIÇÃO -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="DESCRICAO (HISTORICO) (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <TextBox x:Name="TxtDescricao" PlaceholderText="Informe o historico / descricao do lancamento..." Height="34"/>
+                                </StackPanel>
+
+                                <!-- LINHA 4: ENTIDADE (AUTO BUSCA LIKE) COM BOTÃO [+] ADD -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="ENTIDADE / FAVORECIDO (DIGITE PARA FILTRAR):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <AutoSuggestBox Grid.Column="0" x:Name="AsbEntidade" PlaceholderText="Digite nome, razao social ou CPF/CNPJ da entidade..." Height="34"
+                                            DisplayMemberPath="NomeRazao"
+                                            TextMemberPath="NomeRazao"
+                                            GotFocus="AsbEntidade_GotFocus"
+                                            TextChanged="AsbEntidade_TextChanged"
+                                            SuggestionChosen="AsbEntidade_SuggestionChosen"/>
+                                        <Button Grid.Column="1" x:Name="BtnAddEntidade" Content="[+] ADD" Click="BtnAddEntidade_Click"
+                                                Height="34" Padding="12,0"
+                                                Style="{StaticResource PrimaryTerminalButtonStyle}"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- LINHA 5: VALOR, CONCILIADO E DATA CONCILIADO -->
+                                <Grid ColumnSpacing="14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.5*"/>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="160"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="VALOR DO LANCAMENTO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                        <TextBox x:Name="TxtValor" PlaceholderText="0,00" FontWeight="Bold" FontSize="14" Height="34"
+                                                 TextChanged="TxtValor_TextChanged"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="CONCILIADO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                        <ComboBox x:Name="CboConciliado" HorizontalAlignment="Stretch" Height="34"
+                                                  SelectionChanged="CboConciliado_SelectionChanged">
+                                            <ComboBoxItem Content="S - SIM" Tag="S" IsSelected="True"/>
+                                            <ComboBoxItem Content="N - NAO" Tag="N"/>
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Spacing="4">
+                                        <TextBlock Text="DATA CONCILIADO:" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                        <TextBox x:Name="TxtDataConciliacao" MaxLength="10" PlaceholderText="dd/mm/aaaa" Height="34"
+                                                 TextChanged="TxtDataConciliacao_TextChanged"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </ContentControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- BOX 3 (INFERIOR): SALDO ATUAL -->
+                <Border Grid.Row="4" BorderBrush="#00FF66" BorderThickness="1" Background="#051805" Padding="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="PROJEÇÃO APÓS O LANÇAMENTO (SALDO ANTERIOR +/- VALOR):" FontSize="11" Foreground="#00AA44" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" x:Name="TxtSaldoAtual" Text="Saldo Atual: R$ 0,00" FontSize="16" FontWeight="Bold" Foreground="#00FF66" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- BOTÕES DE AÇÃO -->
+                <Grid Grid.Row="5" ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="200"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0" x:Name="BtnSalvar" Content="[F10] SALVAR / INCLUIR LANCAMENTO" Click="BtnSalvar_Click"
+                            Style="{StaticResource PrimaryTerminalButtonStyle}" Height="38" HorizontalAlignment="Stretch" IsEnabled="False"/>
+
+                    <Button Grid.Column="1" x:Name="BtnFechar" Content="[ESC] FECHAR" Click="BtnFechar_Click"
+                            Height="38" HorizontalAlignment="Stretch"/>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

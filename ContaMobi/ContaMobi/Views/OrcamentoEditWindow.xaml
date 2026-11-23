@@ -1,0 +1,562 @@
+<Window
+    x:Class="ContaMobi.Views.OrcamentoEditWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:ContaMobi.Models"
+    Title="Orçamento Mensal - Conta Mobi">
+
+    <Grid Background="#0A0E14" Padding="18" RowSpacing="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 1. TÍTULO DO MODAL E BOTÕES DE ATUALIZAÇÃO -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                x:Name="TxtTituloModal"
+                Text="[ EDITAR ORÇAMENTO MENSAL ]"
+                FontSize="18"
+                FontWeight="Bold"
+                Foreground="#00FF66"
+                VerticalAlignment="Center" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <Button
+                    x:Name="BtnReplicar"
+                    Content="[REPLICAR PARA 11 MESES]"
+                    Background="#16222F"
+                    Foreground="#FFCC00"
+                    BorderBrush="#FFCC00"
+                    BorderThickness="1"
+                    Padding="12,5"
+                    FontSize="11"
+                    FontWeight="Bold"
+                    ToolTipService.ToolTip="Salva o mês atual e copia o planejamento para os próximos 11 meses"
+                    Click="BtnReplicar_Click" />
+
+                <Button
+                    x:Name="BtnSincronizarRealizado"
+                    Content="[ATUALIZAR REALIZADO]"
+                    Background="#16222F"
+                    Foreground="#3399FF"
+                    BorderBrush="#3399FF"
+                    BorderThickness="1"
+                    Padding="12,5"
+                    FontSize="11"
+                    FontWeight="Bold"
+                    Click="BtnSincronizarRealizado_Click" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 2. IDENTIFICAÇÃO DO MÊS / ANO (CHAVE ÚNICA) -->
+        <Border
+            Grid.Row="1"
+            Background="#111820"
+            BorderBrush="#1E293B"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="12,8">
+            <Grid ColumnSpacing="14" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    Text="MÊS (*):"
+                    Foreground="#00FF66"
+                    FontWeight="Bold"
+                    VerticalAlignment="Center" />
+
+                <ComboBox
+                    x:Name="CboMes"
+                    Grid.Column="1"
+                    HorizontalAlignment="Stretch"
+                    Background="#0A0E14"
+                    Foreground="#E2E8F0"
+                    BorderBrush="#334155"
+                    SelectionChanged="PeriodoChave_Changed">
+                    <ComboBoxItem Content="01 - JANEIRO" Tag="1" />
+                    <ComboBoxItem Content="02 - FEVEREIRO" Tag="2" />
+                    <ComboBoxItem Content="03 - MARÇO" Tag="3" />
+                    <ComboBoxItem Content="04 - ABRIL" Tag="4" />
+                    <ComboBoxItem Content="05 - MAIO" Tag="5" />
+                    <ComboBoxItem Content="06 - JUNHO" Tag="6" />
+                    <ComboBoxItem Content="07 - JULHO" Tag="7" />
+                    <ComboBoxItem Content="08 - AGOSTO" Tag="8" />
+                    <ComboBoxItem Content="09 - SETEMBRO" Tag="9" />
+                    <ComboBoxItem Content="10 - OUTUBRO" Tag="10" />
+                    <ComboBoxItem Content="11 - NOVEMBRO" Tag="11" />
+                    <ComboBoxItem Content="12 - DEZEMBRO" Tag="12" />
+                </ComboBox>
+
+                <TextBlock
+                    Grid.Column="2"
+                    Text="ANO (*):"
+                    Foreground="#00FF66"
+                    FontWeight="Bold"
+                    VerticalAlignment="Center" />
+
+                <TextBox
+                    x:Name="TxtAno"
+                    Grid.Column="3"
+                    MaxLength="4"
+                    Background="#0A0E14"
+                    Foreground="#00FF66"
+                    BorderBrush="#334155"
+                    TextChanged="TxtAno_TextChanged" />
+
+                <TextBlock
+                    x:Name="TxtIdentificacaoMesAno"
+                    Grid.Column="4"
+                    Text="COMPETÊNCIA: 11/2026"
+                    FontSize="15"
+                    FontWeight="Bold"
+                    Foreground="#3399FF"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- 3. BOX / GRID DE CATEGORIAS DE CRÉDITOS + SOMATÓRIO + SALDO ANTERIOR -->
+        <Border
+            Grid.Row="2"
+            Background="#111820"
+            BorderBrush="#3399FF"
+            BorderThickness="1"
+            CornerRadius="4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Background="#142436" Padding="12,6" BorderBrush="#1E293B" BorderThickness="0,0,0,1">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="[+] CATEGORIAS DE CRÉDITO (RECEITAS)" FontWeight="Bold" Foreground="#3399FF" />
+                        <TextBlock Grid.Column="1" Text="VALOR PLANEJADO" FontWeight="Bold" Foreground="#3399FF" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="2" Text="VALOR REALIZADO" FontWeight="Bold" Foreground="#3399FF" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="% ATINGIDO" FontWeight="Bold" Foreground="#3399FF" HorizontalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <ListView
+                    x:Name="ListaCreditos"
+                    Grid.Row="1"
+                    SelectionMode="None">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="MinHeight" Value="36" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:OrcamentoCategoriaItem">
+                            <Border Padding="12,4" BorderBrush="#1E293B" BorderThickness="0,0,0,1">
+                                <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="165" />
+                                        <ColumnDefinition Width="165" />
+                                        <ColumnDefinition Width="100" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid Grid.Column="0" VerticalAlignment="Center">
+                                        <Button
+                                            Visibility="{x:Bind MostrarBotaoPai, Mode=OneWay}"
+                                            Tag="{x:Bind}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Padding="0,2"
+                                            HorizontalAlignment="Left"
+                                            Click="BtnAlternarGrupoCredito_Click">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock
+                                                    Text="{x:Bind BotaoExpansaoTexto, Mode=OneWay}"
+                                                    Foreground="#3399FF"
+                                                    FontSize="15"
+                                                    FontWeight="Bold"
+                                                    VerticalAlignment="Center" />
+                                                <TextBlock
+                                                    Text="{x:Bind TituloPai}"
+                                                    Foreground="#FFFFFF"
+                                                    FontSize="15"
+                                                    FontWeight="Bold"
+                                                    VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+
+                                        <TextBlock
+                                            Visibility="{x:Bind MostrarLinhaFilha, Mode=OneWay}"
+                                            Text="{x:Bind TituloFilha}"
+                                            Foreground="#CBD5E1"
+                                            FontSize="13"
+                                            Margin="26,0,0,0"
+                                            VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBox
+                                            Text="{x:Bind ValorPlanejadoTexto, Mode=OneWay}"
+                                            Tag="{x:Bind}"
+                                            Visibility="{x:Bind MostrarEntradaEditavel, Mode=OneWay}"
+                                            TextAlignment="Right"
+                                            Background="#0A0E14"
+                                            Foreground="#3399FF"
+                                            BorderBrush="#334155"
+                                            Padding="8,3"
+                                            TextChanged="TxtValorPlanejadoGrid_TextChanged" />
+
+                                        <TextBlock
+                                            Text="{x:Bind SubtotalPlanejadoPaiTexto, Mode=OneWay}"
+                                            Visibility="{x:Bind MostrarSubtotalPai, Mode=OneWay}"
+                                            Foreground="#55AAFF"
+                                            FontSize="15"
+                                            FontWeight="Bold"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,8,0" />
+                                    </Grid>
+
+                                    <Grid Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBox
+                                            Text="{x:Bind ValorRealizadoTexto, Mode=OneWay}"
+                                            Tag="{x:Bind}"
+                                            Visibility="{x:Bind MostrarEntradaEditavel, Mode=OneWay}"
+                                            TextAlignment="Right"
+                                            Background="#0A0E14"
+                                            Foreground="#88CCFF"
+                                            BorderBrush="#334155"
+                                            Padding="8,3"
+                                            TextChanged="TxtValorRealizadoGrid_TextChanged" />
+
+                                        <TextBlock
+                                            Text="{x:Bind SubtotalRealizadoPaiTexto, Mode=OneWay}"
+                                            Visibility="{x:Bind MostrarSubtotalPai, Mode=OneWay}"
+                                            Foreground="#88CCFF"
+                                            FontSize="15"
+                                            FontWeight="Bold"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,8,0" />
+                                    </Grid>
+
+                                    <TextBlock
+                                        Grid.Column="3"
+                                        Text="{x:Bind PercentualFormatado, Mode=OneWay}"
+                                        Foreground="{x:Bind CorDesvio, Mode=OneWay}"
+                                        FontWeight="Bold"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <Border Grid.Row="2" Background="#16283D" Padding="12,6" BorderBrush="#3399FF" BorderThickness="0,1,0,0">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="TOTAL DE CRÉDITOS DO MÊS (=):" FontWeight="Bold" Foreground="#3399FF" />
+                        <TextBlock x:Name="TxtTotalCreditosPlanejado" Grid.Column="1" Text="R$ 0,00" FontWeight="Bold" Foreground="#3399FF" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="TxtTotalCreditosRealizado" Grid.Column="2" Text="R$ 0,00" FontWeight="Bold" Foreground="#88CCFF" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="TxtPercentualCreditosTotal" Grid.Column="3" Text="0,0%" FontWeight="Bold" Foreground="#3399FF" HorizontalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="3" Background="#0F1E19" Padding="12,6" BorderBrush="#00FF66" BorderThickness="0,1,0,0">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="SALDO ANTERIOR ACUMULADO (+):" FontWeight="Bold" Foreground="#00FF66" />
+                        <TextBlock x:Name="TxtSaldoAnteriorPlanejado" Grid.Column="1" Text="R$ 0,00" FontWeight="Bold" Foreground="#00FF66" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="TxtSaldoAnteriorRealizado" Grid.Column="2" Text="R$ 0,00" FontWeight="Bold" Foreground="#00FF66" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="-" Foreground="#8899AA" HorizontalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 4. LINHA SEPARADORA -->
+        <Border Grid.Row="3" Height="2" Background="#334155" Margin="0,2" />
+
+        <!-- 5. BOX / GRID DE CATEGORIAS DE DÉBITOS + SOMATÓRIO -->
+        <Border
+            Grid.Row="4"
+            Background="#111820"
+            BorderBrush="#FF5555"
+            BorderThickness="1"
+            CornerRadius="4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Background="#2B161B" Padding="12,6" BorderBrush="#1E293B" BorderThickness="0,0,0,1">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="[-] CATEGORIAS DE DÉBITO (DESPESAS)" FontWeight="Bold" Foreground="#FF5555" />
+                        <TextBlock Grid.Column="1" Text="VALOR PLANEJADO" FontWeight="Bold" Foreground="#FF5555" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="2" Text="VALOR REALIZADO" FontWeight="Bold" Foreground="#FF5555" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="% CONSUMIDO" FontWeight="Bold" Foreground="#FF5555" HorizontalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <ListView
+                    x:Name="ListaDebitos"
+                    Grid.Row="1"
+                    SelectionMode="None">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="MinHeight" Value="36" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:OrcamentoCategoriaItem">
+                            <Border Padding="12,4" BorderBrush="#1E293B" BorderThickness="0,0,0,1">
+                                <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="165" />
+                                        <ColumnDefinition Width="165" />
+                                        <ColumnDefinition Width="100" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid Grid.Column="0" VerticalAlignment="Center">
+                                        <Button
+                                            Visibility="{x:Bind MostrarBotaoPai, Mode=OneWay}"
+                                            Tag="{x:Bind}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Padding="0,2"
+                                            HorizontalAlignment="Left"
+                                            Click="BtnAlternarGrupoDebito_Click">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock
+                                                    Text="{x:Bind BotaoExpansaoTexto, Mode=OneWay}"
+                                                    Foreground="#FF5555"
+                                                    FontSize="15"
+                                                    FontWeight="Bold"
+                                                    VerticalAlignment="Center" />
+                                                <TextBlock
+                                                    Text="{x:Bind TituloPai}"
+                                                    Foreground="#FFFFFF"
+                                                    FontSize="15"
+                                                    FontWeight="Bold"
+                                                    VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+
+                                        <TextBlock
+                                            Visibility="{x:Bind MostrarLinhaFilha, Mode=OneWay}"
+                                            Text="{x:Bind TituloFilha}"
+                                            Foreground="#CBD5E1"
+                                            FontSize="13"
+                                            Margin="26,0,0,0"
+                                            VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBox
+                                            Text="{x:Bind ValorPlanejadoTexto, Mode=OneWay}"
+                                            Tag="{x:Bind}"
+                                            Visibility="{x:Bind MostrarEntradaEditavel, Mode=OneWay}"
+                                            TextAlignment="Right"
+                                            Background="#0A0E14"
+                                            Foreground="#FF5555"
+                                            BorderBrush="#334155"
+                                            Padding="8,3"
+                                            TextChanged="TxtValorPlanejadoGrid_TextChanged" />
+
+                                        <TextBlock
+                                            Text="{x:Bind SubtotalPlanejadoPaiTexto, Mode=OneWay}"
+                                            Visibility="{x:Bind MostrarSubtotalPai, Mode=OneWay}"
+                                            Foreground="#FF7777"
+                                            FontSize="15"
+                                            FontWeight="Bold"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,8,0" />
+                                    </Grid>
+
+                                    <Grid Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBox
+                                            Text="{x:Bind ValorRealizadoTexto, Mode=OneWay}"
+                                            Tag="{x:Bind}"
+                                            Visibility="{x:Bind MostrarEntradaEditavel, Mode=OneWay}"
+                                            TextAlignment="Right"
+                                            Background="#0A0E14"
+                                            Foreground="#FF9999"
+                                            BorderBrush="#334155"
+                                            Padding="8,3"
+                                            TextChanged="TxtValorRealizadoGrid_TextChanged" />
+
+                                        <TextBlock
+                                            Text="{x:Bind SubtotalRealizadoPaiTexto, Mode=OneWay}"
+                                            Visibility="{x:Bind MostrarSubtotalPai, Mode=OneWay}"
+                                            Foreground="#FF9999"
+                                            FontSize="15"
+                                            FontWeight="Bold"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,8,0" />
+                                    </Grid>
+
+                                    <TextBlock
+                                        Grid.Column="3"
+                                        Text="{x:Bind PercentualFormatado, Mode=OneWay}"
+                                        Foreground="{x:Bind CorDesvio, Mode=OneWay}"
+                                        FontWeight="Bold"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <Border Grid.Row="2" Background="#33181E" Padding="12,6" BorderBrush="#FF5555" BorderThickness="0,1,0,0">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="TOTAL DE DÉBITOS DO MÊS (=):" FontWeight="Bold" Foreground="#FF5555" />
+                        <TextBlock x:Name="TxtTotalDebitosPlanejado" Grid.Column="1" Text="R$ 0,00" FontWeight="Bold" Foreground="#FF5555" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="TxtTotalDebitosRealizado" Grid.Column="2" Text="R$ 0,00" FontWeight="Bold" Foreground="#FF9999" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="TxtPercentualDebitosTotal" Grid.Column="3" Text="0,0%" FontWeight="Bold" Foreground="#FF5555" HorizontalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 6. LINHA EM DESTAQUE DO SALDO DO MÊS -->
+        <Border
+            Grid.Row="5"
+            Background="#0F291E"
+            BorderBrush="#00FF66"
+            BorderThickness="2"
+            CornerRadius="4"
+            Padding="14,10">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="165" />
+                    <ColumnDefinition Width="165" />
+                    <ColumnDefinition Width="100" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    Text="SALDO FINAL DO MÊS (SALDO ANTERIOR + CRÉDITOS - DÉBITOS):"
+                    FontSize="14"
+                    FontWeight="Bold"
+                    Foreground="#00FF66"
+                    VerticalAlignment="Center" />
+
+                <TextBlock
+                    x:Name="TxtSaldoFinalMesPlanejado"
+                    Grid.Column="1"
+                    Text="R$ 0,00"
+                    FontSize="15"
+                    FontWeight="Bold"
+                    Foreground="#00FF66"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center" />
+
+                <TextBlock
+                    x:Name="TxtSaldoFinalMesRealizado"
+                    Grid.Column="2"
+                    Text="R$ 0,00"
+                    FontSize="15"
+                    FontWeight="Bold"
+                    Foreground="#00FF66"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center" />
+
+                <TextBlock Grid.Column="3" Text="-" Foreground="#00FF66" HorizontalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- 7. MENSAGEM E BOTÕES -->
+        <Grid Grid.Row="6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                x:Name="TxtMensagem"
+                Grid.Column="0"
+                Visibility="Collapsed"
+                FontWeight="Bold"
+                VerticalAlignment="Center" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <Button
+                    x:Name="BtnSalvar"
+                    Content="[SALVAR ORÇAMENTO]"
+                    Background="#003319"
+                    Foreground="#00FF66"
+                    BorderBrush="#00FF66"
+                    BorderThickness="1"
+                    Padding="18,8"
+                    FontWeight="Bold"
+                    Click="BtnSalvar_Click" />
+
+                <Button
+                    Content="[FECHAR]"
+                    Background="#1E293B"
+                    Foreground="#E2E8F0"
+                    BorderBrush="#475569"
+                    BorderThickness="1"
+                    Padding="16,8"
+                    Click="BtnFechar_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

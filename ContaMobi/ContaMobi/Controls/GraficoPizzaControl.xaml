@@ -1,0 +1,72 @@
+<UserControl
+    x:Class="ContaMobi.Controls.GraficoPizzaControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Border
+        Background="#050D08"
+        BorderBrush="#005522"
+        BorderThickness="1"
+        CornerRadius="4"
+        Padding="10">
+        <Grid RowSpacing="6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- TÍTULO E TOTAL -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    x:Name="TxtTitulo"
+                    Grid.Column="0"
+                    Text="GRÁFICO"
+                    FontSize="12"
+                    FontWeight="Bold"
+                    Foreground="#00FF66"
+                    VerticalAlignment="Center" />
+
+                <TextBlock
+                    x:Name="TxtTotal"
+                    Grid.Column="1"
+                    Text="Total: R$ 0,00"
+                    FontSize="12"
+                    FontWeight="Bold"
+                    Foreground="#CBD5E1"
+                    VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- ÁREA DA PIZZA MAXIMIZADA -->
+            <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" MinHeight="310">
+                <Viewbox MaxHeight="380" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Canvas
+                        x:Name="CanvasPizza"
+                        Width="360"
+                        Height="360" />
+                </Viewbox>
+
+                <TextBlock
+                    x:Name="TxtSemDados"
+                    Text="Sem movimentação no período"
+                    Foreground="#64748B"
+                    FontSize="12"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed" />
+            </Grid>
+
+            <!-- LEGENDA COMPACTA (CHIPS LADO A LADO) -->
+            <StackPanel
+                x:Name="PainelLegenda"
+                Grid.Row="2"
+                Spacing="4"
+                HorizontalAlignment="Center" />
+        </Grid>
+    </Border>
+</UserControl>

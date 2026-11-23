@@ -1,0 +1,172 @@
+<Page
+    x:Class="ContaMobi.Views.CategoriasPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:ContaMobi.Models"
+    mc:Ignorable="d">
+
+    <Grid Background="#000000" Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- CABEÇALHO -->
+        <Border Grid.Row="0" BorderBrush="#00FF66" BorderThickness="1" Background="#051005" Padding="12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="[ PLANO DE CONTAS // CATEGORIAS ]" FontSize="16" FontWeight="Bold" Foreground="#00FF66"/>
+                    <TextBlock Text="ESTRUTURA HIERARQUICA: GRUPO PAI (1) E SUBCATEGORIAS (2)" FontSize="11" Foreground="#00AA44"/>
+                </StackPanel>
+                <Button Grid.Column="1" x:Name="BtnInserir" Content="[+] NOVA CATEGORIA (F2)" Click="BtnInserir_Click"
+                        Style="{StaticResource PrimaryTerminalButtonStyle}" Height="34" Width="190"/>
+            </Grid>
+        </Border>
+
+        <!-- FILTROS -->
+        <Grid Grid.Row="1" Margin="0,0,0,12" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="TxtBusca" Grid.Column="0" PlaceholderText="BUSCAR POR DESCRICAO..."
+                     Height="34" TextChanged="TxtBusca_TextChanged" KeyDown="TxtBusca_KeyDown"/>
+
+            <ComboBox x:Name="CboFiltroTipo" Grid.Column="1" HorizontalAlignment="Stretch" Height="34"
+                      SelectionChanged="CboFiltroTipo_SelectionChanged">
+                <ComboBoxItem Content="TODOS OS TIPOS" IsSelected="True" Tag=""/>
+                <ComboBoxItem Content="RECEITAS (C)" Tag="C"/>
+                <ComboBoxItem Content="DESPESAS (D)" Tag="D"/>
+            </ComboBox>
+
+            <Button Grid.Column="2" x:Name="BtnBuscar" Content="[F3] FILTRAR" Click="BtnBuscar_Click"
+                    Height="34" Width="110"/>
+        </Grid>
+
+        <!-- LISTA HIERÁRQUICA -->
+        <Border Grid.Row="2" BorderBrush="#004411" BorderThickness="1" Background="#020802">
+            <ListView x:Name="ListaCategorias" DoubleTapped="ListaCategorias_DoubleTapped"
+                      KeyDown="ListaCategorias_KeyDown" SelectionMode="Single">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="MinHeight" Value="38"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+
+                <ListView.HeaderTemplate>
+                    <DataTemplate>
+                        <Grid Background="#051A05" Padding="10,8" BorderBrush="#008833" BorderThickness="0,0,0,1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="4*"/>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="170"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="DESCRICAO / ESTRUTURA" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="1" Text="TIPO" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="2" Text="NIVEL" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="3" Text="LANCAMENTO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="ACOES" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.HeaderTemplate>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Categoria">
+                        <Grid Padding="10,6" BorderBrush="#003311" BorderThickness="0,0,0,1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="4*"/>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="170"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       Text="{x:Bind DescricaoHierarquica}"
+                                       Foreground="#00FF66"
+                                       FontSize="12"
+                                       FontWeight="{x:Bind PesoFonte}"
+                                       VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="{x:Bind TipoDescricao}"
+                                       Foreground="{x:Bind TipoCor}"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Column="2"
+                                       Text="{x:Bind NivelDescricao}"
+                                       Foreground="#55CC77"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Column="3"
+                                       Text="{x:Bind AceitaLancamentoTexto}"
+                                       Foreground="{x:Bind AceitaLancamentoCor}"
+                                       FontWeight="SemiBold"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+
+                            <StackPanel Grid.Column="4"
+                                        Orientation="Horizontal"
+                                        Spacing="6"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <Button Content="[EDITAR]"
+                                        Tag="{x:Bind}"
+                                        Click="BtnEditarLinha_Click"
+                                        Background="#051505"
+                                        Foreground="#00FF66"
+                                        BorderBrush="#00FF66"
+                                        BorderThickness="1"
+                                        Padding="8,3"
+                                        FontSize="11"
+                                        FontWeight="Bold"
+                                        MinHeight="26"/>
+
+                                <Button Content="[EXCLUIR]"
+                                        Tag="{x:Bind}"
+                                        Click="BtnExcluirLinha_Click"
+                                        Background="#1F0B0B"
+                                        Foreground="#FF5555"
+                                        BorderBrush="#FF5555"
+                                        BorderThickness="1"
+                                        Padding="8,3"
+                                        FontSize="11"
+                                        FontWeight="Bold"
+                                        MinHeight="26"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Border>
+
+        <!-- RODAPÉ -->
+        <Border Grid.Row="3" Margin="0,8,0,0" Padding="4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="&gt; [ENTER] / [DUPLO CLIQUE] / [EDITAR]: EDITAR | [F2]: NOVA CATEGORIA" FontSize="11" Foreground="#00AA44"/>
+                <TextBlock Grid.Column="1" x:Name="TxtTotalRegistros" Text="REGISTROS: 0" FontSize="11" Foreground="#00FF66" FontWeight="SemiBold"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>
