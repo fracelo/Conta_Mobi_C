@@ -68,6 +68,12 @@
         <Border Grid.Row="2" BorderBrush="#004411" BorderThickness="1" Background="#020802">
             <ListView x:Name="ListaEntidades" DoubleTapped="ListaEntidades_DoubleTapped" 
                       KeyDown="ListaEntidades_KeyDown" SelectionMode="Single">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+
                 <ListView.HeaderTemplate>
                     <DataTemplate>
                         <Grid Background="#051A05" Padding="10,8" BorderBrush="#008833" BorderThickness="0,0,0,1">
@@ -77,12 +83,14 @@
                                 <ColumnDefinition Width="70"/>
                                 <ColumnDefinition Width="160"/>
                                 <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="95"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="NOME / RAZAO SOCIAL" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
                             <TextBlock Grid.Column="1" Text="CLASSIFICACAO" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
                             <TextBlock Grid.Column="2" Text="TIPO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Column="3" Text="CPF / CNPJ" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
                             <TextBlock Grid.Column="4" Text="CIDADE / UF" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="5" Text="ACOES" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.HeaderTemplate>
@@ -96,12 +104,22 @@
                                 <ColumnDefinition Width="70"/>
                                 <ColumnDefinition Width="160"/>
                                 <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="95"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="{x:Bind NomeRazao}" Foreground="#00FF66" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{x:Bind TipoEntidadeBadge}" Foreground="#55CC77" FontSize="11" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2" Text="{x:Bind TipoPessoaDescricao}" Foreground="#00AA44" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="3" Text="{x:Bind DocumentoFormatado}" Foreground="#00FF66" FontSize="11" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="4" Text="{x:Bind CidadeUfFormatada}" Foreground="#00AA44" FontSize="11" VerticalAlignment="Center"/>
+                            <Button Grid.Column="5"
+                                    Content="[EDITAR]"
+                                    Click="BtnEditarLinha_Click"
+                                    Tag="{x:Bind}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Height="28"
+                                    Padding="10,0"
+                                    FontSize="11"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
@@ -115,7 +133,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="&gt; [ENTER] / [DUPLO CLIQUE]: EDITAR | [F2]: NOVA ENTIDADE" FontSize="11" Foreground="#00AA44"/>
+                <TextBlock Grid.Column="0" Text="&gt; [EDITAR] / [ENTER] / [DUPLO CLIQUE]: EDITAR | [F2]: NOVA ENTIDADE" FontSize="11" Foreground="#00AA44"/>
                 <TextBlock Grid.Column="1" x:Name="TxtTotalRegistros" Text="REGISTROS: 0" FontSize="11" Foreground="#00FF66" FontWeight="SemiBold"/>
             </Grid>
         </Border>

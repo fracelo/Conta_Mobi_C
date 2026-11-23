@@ -53,6 +53,12 @@
                       DoubleTapped="ListaContas_DoubleTapped" 
                       KeyDown="ListaContas_KeyDown"
                       SelectionMode="Single">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+
                 <ListView.HeaderTemplate>
                     <DataTemplate>
                         <Grid Background="#051A05" Padding="10,8" BorderBrush="#008833" BorderThickness="0,0,0,1">
@@ -61,11 +67,13 @@
                                 <ColumnDefinition Width="3*"/>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="95"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="DESCRICAO DA CONTA" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
                             <TextBlock Grid.Column="1" Text="INSTITUICAO BANCARIA" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
                             <TextBlock Grid.Column="2" Text="DATA ABERTURA" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Column="3" Text="SALDO INICIAL" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
+                            <TextBlock Grid.Column="4" Text="ACOES" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.HeaderTemplate>
@@ -78,11 +86,21 @@
                                 <ColumnDefinition Width="3*"/>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="95"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="{x:Bind Descricao}" Foreground="#00FF66" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{x:Bind BancoFormatado}" Foreground="#55CC77" FontSize="11" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2" Text="{x:Bind DataCriacaoFormatada}" Foreground="#00AA44" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="3" Text="{x:Bind SaldoFormatado}" Foreground="{x:Bind SaldoCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <Button Grid.Column="4"
+                                    Content="[EDITAR]"
+                                    Click="BtnEditarLinha_Click"
+                                    Tag="{x:Bind}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Height="28"
+                                    Padding="10,0"
+                                    FontSize="11"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
@@ -96,7 +114,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="&gt; [ENTER] / [DUPLO CLIQUE]: EDITAR | [F2]: NOVA CONTA" FontSize="11" Foreground="#00AA44"/>
+                <TextBlock Grid.Column="0" Text="&gt; [EDITAR] / [ENTER] / [DUPLO CLIQUE]: EDITAR | [F2]: NOVA CONTA" FontSize="11" Foreground="#00AA44"/>
                 <TextBlock Grid.Column="1" x:Name="TxtTotalRegistros" Text="REGISTROS: 0" FontSize="11" Foreground="#00FF66" FontWeight="SemiBold"/>
             </Grid>
         </Border>

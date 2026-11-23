@@ -91,6 +91,15 @@ namespace ContaMobi.Views
             });
         }
 
+        private void BtnEditarLinha_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is ContaCorrente selecionada)
+            {
+                ListaContas.SelectedItem = selecionada;
+                AbrirEditor(selecionada);
+            }
+        }
+
         private void ListaContas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             if (ListaContas.SelectedItem is ContaCorrente selecionada)

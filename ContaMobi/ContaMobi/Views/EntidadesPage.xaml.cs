@@ -116,6 +116,15 @@ namespace ContaMobi.Views
             });
         }
 
+        private void BtnEditarLinha_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is Entidade selecionada)
+            {
+                ListaEntidades.SelectedItem = selecionada;
+                AbrirEditor(selecionada);
+            }
+        }
+
         private void ListaEntidades_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             if (ListaEntidades.SelectedItem is Entidade selecionada)

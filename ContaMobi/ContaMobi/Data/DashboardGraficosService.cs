@@ -1,4 +1,5 @@
-﻿using ContaMobi.Models;
+﻿using ContaMobi.Controls;
+using ContaMobi.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -9,9 +10,10 @@ namespace ContaMobi.Data
     public static class DashboardGraficosService
     {
         /// <summary>
-        /// Agrupa lançamentos em conta corrente (Entradas = "C" ou Saídas = "D") por categoria no período.
+        /// Agrupa lançamentos em conta corrente (Entradas = "C" ou Saídas = "D") por Categoria Nível 1,
+        /// anexando os valores de Nível 2 para o gráfico de detalhamento ao clicar.
         /// </summary>
-        public static List<(string Categoria, decimal Valor)> ObterMovimentacaoPorCategoria(
+        public static List<CategoriaNivel1Grafico> ObterMovimentacaoPorCategoria(
             string tipo, DateTime dataInicio, DateTime dataFim)
         {
             TransferenciaService.GarantirEstruturaTransferencia();
@@ -20,29 +22,28 @@ namespace ContaMobi.Data
             DateTime dtIni = dataInicio.Date;
             DateTime dtFim = dataFim.Date.AddDays(1).AddTicks(-1);
 
-            var lancamentos = db.Set<LancamentoConta>()
+            var categoriasMap = CarregarMapaCategorias(db);
+
+            var itensBrutos = db.Set<LancamentoConta>()
                 .AsNoTracking()
-                .Include(l => l.Categoria)
                 .Where(l => l.DataLancamento >= dtIni &&
                             l.DataLancamento <= dtFim &&
                             l.Tipo == tipo &&
                             !string.IsNullOrEmpty(l.CategoriaUuid) &&
                             l.CategoriaUuid != TransferenciaService.CategoriaTransferenciaUuid &&
                             string.IsNullOrEmpty(l.TransferenciaUuid))
-                .ToList();
+                .Select(l => new { l.CategoriaUuid, l.Valor })
+                .ToList()
+                .Select(l => (CategoriaUuid: l.CategoriaUuid, Valor: Math.Abs(l.Valor)));
 
-            return lancamentos
-                .GroupBy(l => l.Categoria?.Descricao ?? "Sem Categoria")
-                .Select(g => (Categoria: g.Key, Valor: g.Sum(x => Math.Abs(x.Valor))))
-                .Where(x => x.Valor > 0m)
-                .OrderByDescending(x => x.Valor)
-                .ToList();
+            return AgruparPorNivel1(categoriasMap, itensBrutos);
         }
 
         /// <summary>
-        /// Soma o Orçamento Planejado do ano corrente filtrado por tipo ("C" = Receitas, "D" = Despesas).
+        /// Soma o Orçamento Planejado do ano corrente filtrado por tipo ("C" = Receitas, "D" = Despesas),
+        /// agrupado por Categoria Nível 1 com subcategorias de Nível 2.
         /// </summary>
-        public static List<(string Categoria, decimal Valor)> ObterOrcamentoPlanejadoAnoCorrente(string tipo)
+        public static List<CategoriaNivel1Grafico> ObterOrcamentoPlanejadoAnoCorrente(string tipo)
         {
             OrcamentoService.GarantirTabelaCriada();
             using var db = new AppDbContext();
@@ -50,11 +51,7 @@ namespace ContaMobi.Data
             int anoAtual = DateTime.Today.Year;
             string tipoAlvo = OrcamentoService.NormalizarTipoCategoria(tipo);
 
-            var categoriasMap = db.Categorias
-                .AsNoTracking()
-                .ToList()
-                .GroupBy(c => c.CategoriaUuid.Trim(), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+            var categoriasMap = CarregarMapaCategorias(db);
 
             var orcamentosAno = db.Set<Orcamento>()
                 .AsNoTracking()
@@ -63,26 +60,23 @@ namespace ContaMobi.Data
                             o.CategoriaUuid != TransferenciaService.CategoriaTransferenciaUuid)
                 .ToList();
 
-            return orcamentosAno
+            var itensFiltrados = orcamentosAno
                 .Where(o =>
                 {
                     string catId = o.CategoriaUuid.Trim();
                     return categoriasMap.TryGetValue(catId, out var cat) &&
                            OrcamentoService.NormalizarTipoCategoria(cat.Tipo) == tipoAlvo;
                 })
-                .GroupBy(o => o.CategoriaUuid.Trim(), StringComparer.OrdinalIgnoreCase)
-                .Select(g => (
-                    Categoria: categoriasMap.TryGetValue(g.Key, out var cat) ? cat.Descricao : "Sem Categoria",
-                    Valor: g.Sum(x => Math.Abs(x.ValorPlanejado))))
-                .Where(x => x.Valor > 0m)
-                .OrderByDescending(x => x.Valor)
-                .ToList();
+                .Select(o => (CategoriaUuid: o.CategoriaUuid, Valor: Math.Abs(o.ValorPlanejado)));
+
+            return AgruparPorNivel1(categoriasMap, itensFiltrados);
         }
 
         /// <summary>
-        /// Soma o Orçamento Realizado do ano corrente (lançamentos em conta corrente) filtrado por tipo ("C" = Receitas, "D" = Despesas).
+        /// Soma o Orçamento Realizado do ano corrente (lançamentos em conta corrente) filtrado por tipo ("C" = Receitas, "D" = Despesas),
+        /// agrupado por Categoria Nível 1 com subcategorias de Nível 2.
         /// </summary>
-        public static List<(string Categoria, decimal Valor)> ObterOrcamentoRealizadoAnoCorrente(string tipo)
+        public static List<CategoriaNivel1Grafico> ObterOrcamentoRealizadoAnoCorrente(string tipo)
         {
             TransferenciaService.GarantirEstruturaTransferencia();
             using var db = new AppDbContext();
@@ -91,22 +85,107 @@ namespace ContaMobi.Data
             DateTime inicioAno = new DateTime(anoAtual, 1, 1);
             DateTime fimAno = new DateTime(anoAtual, 12, 31, 23, 59, 59);
 
-            var lancamentosAno = db.Set<LancamentoConta>()
+            var categoriasMap = CarregarMapaCategorias(db);
+
+            var itensBrutos = db.Set<LancamentoConta>()
                 .AsNoTracking()
-                .Include(l => l.Categoria)
                 .Where(l => l.DataLancamento >= inicioAno &&
                             l.DataLancamento <= fimAno &&
                             l.Tipo == tipo &&
                             !string.IsNullOrEmpty(l.CategoriaUuid) &&
                             l.CategoriaUuid != TransferenciaService.CategoriaTransferenciaUuid &&
                             string.IsNullOrEmpty(l.TransferenciaUuid))
+                .Select(l => new { l.CategoriaUuid, l.Valor })
+                .ToList()
+                .Select(l => (CategoriaUuid: l.CategoriaUuid, Valor: Math.Abs(l.Valor)));
+
+            return AgruparPorNivel1(categoriasMap, itensBrutos);
+        }
+
+        private static Dictionary<string, Categoria> CarregarMapaCategorias(AppDbContext db)
+        {
+            return db.Categorias
+                .AsNoTracking()
+                .ToList()
+                .GroupBy(c => c.CategoriaUuid.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static List<CategoriaNivel1Grafico> AgruparPorNivel1(
+            Dictionary<string, Categoria> categoriasMap,
+            IEnumerable<(string CategoriaUuid, decimal Valor)> itensBrutos)
+        {
+            // 1. Consolida valores por categoria lançada (Nível 2)
+            var totaisPorCategoria = itensBrutos
+                .Where(x => !string.IsNullOrWhiteSpace(x.CategoriaUuid) && x.Valor > 0m)
+                .GroupBy(x => x.CategoriaUuid.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(g => (CategoriaUuid: g.Key, Valor: g.Sum(i => i.Valor)))
+                .Where(x => x.Valor > 0m)
                 .ToList();
 
-            return lancamentosAno
-                .GroupBy(l => l.Categoria?.Descricao ?? "Sem Categoria")
-                .Select(g => (Categoria: g.Key, Valor: g.Sum(x => Math.Abs(x.Valor))))
-                .Where(x => x.Valor > 0m)
-                .OrderByDescending(x => x.Valor)
+            var gruposNivel1 = new Dictionary<string, CategoriaNivel1Grafico>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in totaisPorCategoria)
+            {
+                string paiId;
+                string nomePai;
+                string nomeSub;
+
+                if (categoriasMap.TryGetValue(item.CategoriaUuid, out var cat))
+                {
+                    nomeSub = cat.Descricao;
+
+                    if (cat.Nivel >= 2 &&
+                        !string.IsNullOrWhiteSpace(cat.PaiUuid) &&
+                        categoriasMap.TryGetValue(cat.PaiUuid.Trim(), out var catPai))
+                    {
+                        paiId = catPai.CategoriaUuid.Trim();
+                        nomePai = catPai.Descricao;
+                    }
+                    else
+                    {
+                        // Caso o lançamento esteja direto em Nível 1 ou sem pai vinculado
+                        paiId = cat.CategoriaUuid.Trim();
+                        nomePai = cat.Descricao;
+                    }
+                }
+                else
+                {
+                    paiId = "SEM_CATEGORIA";
+                    nomePai = "Sem Categoria";
+                    nomeSub = "Sem Categoria";
+                }
+
+                if (!gruposNivel1.TryGetValue(paiId, out var grupo))
+                {
+                    grupo = new CategoriaNivel1Grafico
+                    {
+                        CategoriaPaiUuid = paiId,
+                        Nome = nomePai
+                    };
+                    gruposNivel1[paiId] = grupo;
+                }
+
+                grupo.Subcategorias.Add(new SubcategoriaNivel2Grafico
+                {
+                    CategoriaUuid = item.CategoriaUuid,
+                    Nome = nomeSub,
+                    Valor = item.Valor
+                });
+            }
+
+            foreach (var grupo in gruposNivel1.Values)
+            {
+                grupo.Subcategorias = grupo.Subcategorias
+                    .OrderByDescending(s => s.Valor)
+                    .ToList();
+
+                grupo.ValorTotal = grupo.Subcategorias.Sum(s => s.Valor);
+            }
+
+            return gruposNivel1.Values
+                .Where(g => g.ValorTotal > 0m)
+                .OrderByDescending(g => g.ValorTotal)
                 .ToList();
         }
     }

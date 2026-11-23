@@ -47,16 +47,24 @@
                             <ColumnDefinition Width="2*"/>
                             <ColumnDefinition Width="1.5*"/>
                             <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="95"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="CODIGO" FontWeight="Bold" Foreground="#00FF66"/>
                         <TextBlock Grid.Column="1" Text="NOME DO BANCO" FontWeight="Bold" Foreground="#00FF66"/>
                         <TextBlock Grid.Column="2" Text="APELIDO" FontWeight="Bold" Foreground="#00FF66"/>
                         <TextBlock Grid.Column="3" Text="STATUS" FontWeight="Bold" Foreground="#00FF66" HorizontalAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="ACOES" FontWeight="Bold" Foreground="#00FF66" HorizontalAlignment="Center"/>
                     </Grid>
                 </Border>
 
                 <ListView x:Name="ListaBancos" Grid.Row="1" SelectionMode="Single"
                           DoubleTapped="ListaBancos_DoubleTapped">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:Banco">
                             <Grid Padding="4,6">
@@ -65,11 +73,21 @@
                                     <ColumnDefinition Width="2*"/>
                                     <ColumnDefinition Width="1.5*"/>
                                     <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="95"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{x:Bind CodigoCompensacao}" Foreground="#55CC77"/>
-                                <TextBlock Grid.Column="1" Text="{x:Bind Nome}" Foreground="#55CC77"/>
-                                <TextBlock Grid.Column="2" Text="{x:Bind Apelido}" Foreground="#55CC77"/>
-                                <TextBlock Grid.Column="3" Text="{x:Bind StatusTexto}" Foreground="{x:Bind StatusCor}" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="{x:Bind CodigoCompensacao}" Foreground="#55CC77" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{x:Bind Nome}" Foreground="#55CC77" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{x:Bind Apelido}" Foreground="#55CC77" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="{x:Bind StatusTexto}" Foreground="{x:Bind StatusCor}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Button Grid.Column="4"
+                                        Content="[EDITAR]"
+                                        Click="BtnEditarLinha_Click"
+                                        Tag="{x:Bind}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Height="28"
+                                        Padding="10,0"
+                                        FontSize="11"/>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -77,7 +95,7 @@
             </Grid>
         </Border>
 
-        <TextBlock Grid.Row="2" Text="&gt; Dica: De duplo clique na linha para abrir/editar os dados do banco."
+        <TextBlock Grid.Row="2" Text="&gt; Dica: Clique em [EDITAR] ou de duplo clique na linha para alterar os dados do banco."
                    FontSize="11" Foreground="#00AA44"/>
     </Grid>
 </Page>

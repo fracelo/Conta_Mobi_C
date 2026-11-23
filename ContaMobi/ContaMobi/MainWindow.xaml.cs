@@ -1,7 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using ContaMobi.Data;
+using ContaMobi.Models;
 using ContaMobi.Views;
 using System;
 using System.Globalization;
@@ -60,11 +63,40 @@ namespace ContaMobi
                 {
                     int totalBancos = db.Bancos.Count();
                     int totalCategorias = db.Categorias.Count();
-                    int totalContas = db.ContasCorrentes.Count();
+                    var contas = db.ContasCorrentes.AsNoTracking().ToList();
+                    int totalContas = contas.Count;
 
                     TxtStatusBanco.Text = $"> [OK] SQLite conectado! Bancos: {totalBancos} | Categorias: {totalCategorias} | Contas: {totalContas}";
 
-                    // Carrega o resumo do orçamento do mês atual (Planejado x Realizado)
+                    // 1. Calcula o Saldo Consolidado em Contas (Saldo Inicial + Créditos - Débitos até hoje)
+                    decimal saldoInicialTotal = contas.Sum(c => c.SaldoInicial);
+                    DateTime hojeFim = DateTime.Today.AddDays(1).AddTicks(-1);
+
+                    var lancamentosAteHoje = db.Set<LancamentoConta>()
+                        .AsNoTracking()
+                        .Where(l => l.DataLancamento <= hojeFim)
+                        .Select(l => new { l.Tipo, l.Valor })
+                        .ToList();
+
+                    decimal totalCreditos = lancamentosAteHoje
+                        .Where(l => l.Tipo == "C")
+                        .Sum(l => Math.Abs(l.Valor));
+
+                    decimal totalDebitos = lancamentosAteHoje
+                        .Where(l => l.Tipo == "D")
+                        .Sum(l => Math.Abs(l.Valor));
+
+                    decimal saldoConsolidado = saldoInicialTotal + totalCreditos - totalDebitos;
+
+                    if (TxtSaldoTotal != null)
+                    {
+                        TxtSaldoTotal.Text = saldoConsolidado.ToString("C2", _cultura);
+                        TxtSaldoTotal.Foreground = saldoConsolidado >= 0m
+                            ? new SolidColorBrush(Color.FromArgb(255, 0, 255, 102))
+                            : new SolidColorBrush(Color.FromArgb(255, 255, 85, 85));
+                    }
+
+                    // 2. Carrega o resumo do orçamento do mês atual (Planejado x Realizado)
                     int anoAtual = DateTime.Today.Year;
                     int mesAtual = DateTime.Today.Month;
 
@@ -86,13 +118,16 @@ namespace ContaMobi
                     }
                 }
 
-                // Atualiza os 6 gráficos do Dashboard
+                // 3. Atualiza os totais de Receitas/Despesas do período e os 6 gráficos do Dashboard
                 CarregarGraficosMovimentacao();
                 CarregarGraficosOrcamentoAno();
             }
             catch (Exception ex)
             {
                 TxtStatusBanco.Text = $"> [ALERTA] Erro ao ler banco local: {ex.Message}";
+                if (TxtSaldoTotal != null) TxtSaldoTotal.Text = "R$ 0,00";
+                if (TxtReceitasMes != null) TxtReceitasMes.Text = "R$ 0,00";
+                if (TxtDespesasMes != null) TxtDespesasMes.Text = "R$ 0,00";
                 if (TxtOrcamentoMesResumo != null)
                 {
                     TxtOrcamentoMesResumo.Text = "Plan: R$ 0,00\nReal: R$ 0,00";
@@ -163,12 +198,28 @@ namespace ContaMobi
             var entradas = DashboardGraficosService.ObterMovimentacaoPorCategoria("C", dtIni, dtFim);
             var saidas = DashboardGraficosService.ObterMovimentacaoPorCategoria("D", dtIni, dtFim);
 
-            GraficoEntradas.Configurar(
+            // Atualiza os cards de Receitas e Despesas do período selecionado
+            decimal totalReceitasPeriodo = entradas.Sum(e => e.ValorTotal);
+            decimal totalDespesasPeriodo = saidas.Sum(s => s.ValorTotal);
+
+            if (TxtReceitasMes != null)
+            {
+                TxtReceitasMes.Text = totalReceitasPeriodo.ToString("C2", _cultura);
+                TxtReceitasMes.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 255, 102));
+            }
+
+            if (TxtDespesasMes != null)
+            {
+                TxtDespesasMes.Text = totalDespesasPeriodo.ToString("C2", _cultura);
+                TxtDespesasMes.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 85, 85));
+            }
+
+            GraficoEntradas.ConfigurarHierarquico(
                 "ENTRADAS (RECEITAS)",
                 Color.FromArgb(255, 51, 153, 255),
                 entradas);
 
-            GraficoSaidas.Configurar(
+            GraficoSaidas.ConfigurarHierarquico(
                 "SAÍDAS (DESPESAS)",
                 Color.FromArgb(255, 255, 85, 85),
                 saidas);
@@ -191,22 +242,22 @@ namespace ContaMobi
             var realReceitas = DashboardGraficosService.ObterOrcamentoRealizadoAnoCorrente("C");
             var realDespesas = DashboardGraficosService.ObterOrcamentoRealizadoAnoCorrente("D");
 
-            GraficoOrcamentoPlanejadoReceitas.Configurar(
+            GraficoOrcamentoPlanejadoReceitas.ConfigurarHierarquico(
                 $"RECEITAS PLANEJADAS ({anoAtual})",
                 Color.FromArgb(255, 51, 153, 255),
                 planReceitas);
 
-            GraficoOrcamentoPlanejadoDespesas.Configurar(
+            GraficoOrcamentoPlanejadoDespesas.ConfigurarHierarquico(
                 $"DESPESAS PLANEJADAS ({anoAtual})",
                 Color.FromArgb(255, 255, 85, 85),
                 planDespesas);
 
-            GraficoOrcamentoRealizadoReceitas.Configurar(
+            GraficoOrcamentoRealizadoReceitas.ConfigurarHierarquico(
                 $"RECEITAS REALIZADAS ({anoAtual})",
                 Color.FromArgb(255, 0, 255, 102),
                 realReceitas);
 
-            GraficoOrcamentoRealizadoDespesas.Configurar(
+            GraficoOrcamentoRealizadoDespesas.ConfigurarHierarquico(
                 $"DESPESAS REALIZADAS ({anoAtual})",
                 Color.FromArgb(255, 255, 112, 67),
                 realDespesas);

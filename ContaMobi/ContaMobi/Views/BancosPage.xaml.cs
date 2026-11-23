@@ -7,7 +7,6 @@ using ContaMobi.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace ContaMobi.Views
 {
@@ -80,6 +79,15 @@ namespace ContaMobi.Views
         {
             // Abre janela de edição com novo registro (CodigoBanco = 0)
             AbrirEditor(new Banco { Ativo = true });
+        }
+
+        private void BtnEditarLinha_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is Banco bancoSelecionado)
+            {
+                ListaBancos.SelectedItem = bancoSelecionado;
+                AbrirEditor(bancoSelecionado);
+            }
         }
 
         private void ListaBancos_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
