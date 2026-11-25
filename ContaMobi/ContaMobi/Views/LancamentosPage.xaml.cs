@@ -16,6 +16,7 @@ namespace ContaMobi.Views
     public sealed partial class LancamentosPage : Page
     {
         private readonly CultureInfo _cultura = new("pt-BR");
+        private readonly HashSet<string> _lancamentosConferidos = new(StringComparer.OrdinalIgnoreCase);
         private bool _formatandoData = false;
 
         public LancamentosPage()
@@ -27,10 +28,11 @@ namespace ContaMobi.Views
 
             this.Loaded += (s, e) =>
             {
+                _lancamentosConferidos.Clear();
                 TransferenciaService.GarantirEstruturaTransferencia();
                 CarregarComboContas();
                 AtualizarDatasPorPeriodo();
-                CarregarExtrato();
+                CarregarExtrato(preservarConferidos: false);
             };
         }
 
@@ -108,10 +110,31 @@ namespace ContaMobi.Views
             }
         }
 
-        public void CarregarExtrato()
+        public void CarregarExtrato(bool preservarConferidos = true)
         {
             if (!this.IsLoaded || ListaLancamentos == null)
                 return;
+
+            if (preservarConferidos)
+            {
+                if (ListaLancamentos.ItemsSource is IEnumerable<LancamentoConta> listaAtual)
+                {
+                    foreach (var item in listaAtual)
+                    {
+                        if (string.IsNullOrWhiteSpace(item.LancamentoUuid))
+                            continue;
+
+                        if (item.Conferido)
+                            _lancamentosConferidos.Add(item.LancamentoUuid);
+                        else
+                            _lancamentosConferidos.Remove(item.LancamentoUuid);
+                    }
+                }
+            }
+            else
+            {
+                _lancamentosConferidos.Clear();
+            }
 
             if (!DateTime.TryParseExact(TxtDataInicio.Text.Trim(), "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime dtIni))
             {
@@ -129,6 +152,18 @@ namespace ContaMobi.Views
             {
                 var resultado = MovimentacaoContaService.ListarLancamentosDoPeriodo(contaUuid, dtIni, dtFim);
 
+                if (_lancamentosConferidos.Count > 0)
+                {
+                    foreach (var item in resultado.Lancamentos)
+                    {
+                        if (!string.IsNullOrWhiteSpace(item.LancamentoUuid) &&
+                            _lancamentosConferidos.Contains(item.LancamentoUuid))
+                        {
+                            item.Conferido = true;
+                        }
+                    }
+                }
+
                 ListaLancamentos.ItemsSource = resultado.Lancamentos;
                 TxtSaldoAnterior.Text = $"Saldo Anterior..: {resultado.SaldoAnterior.ToString("C2", _cultura)}";
                 TxtSaldoFinal.Text = $"Saldo Final..: {resultado.SaldoFinal.ToString("C2", _cultura)}";
@@ -144,7 +179,10 @@ namespace ContaMobi.Views
 
         private void CboFiltroConta_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (this.IsLoaded) CarregarExtrato();
+            if (this.IsLoaded)
+            {
+                CarregarExtrato(preservarConferidos: false);
+            }
         }
 
         private void CboFiltroPeriodo_SelectionChanged(object sender, SelectionChangedEventArgs e)

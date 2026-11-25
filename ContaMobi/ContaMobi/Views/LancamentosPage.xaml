@@ -109,6 +109,12 @@
         <!-- GRID DE LANÇAMENTOS -->
         <Border Grid.Row="3" BorderBrush="#004411" BorderThickness="1" Background="#020802">
             <ListView x:Name="ListaLancamentos" SelectionMode="Single" KeyDown="ListaLancamentos_KeyDown">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+
                 <ListView.HeaderTemplate>
                     <DataTemplate>
                         <Grid Background="#051A05" Padding="10,8" BorderBrush="#008833" BorderThickness="0,0,0,1" ColumnSpacing="8">
@@ -118,7 +124,7 @@
                                 <ColumnDefinition Width="2.4*"/>
                                 <ColumnDefinition Width="50"/>
                                 <ColumnDefinition Width="1.6*"/>
-                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="155"/>
                                 <ColumnDefinition Width="85"/>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="78"/>
@@ -145,7 +151,7 @@
                                 <ColumnDefinition Width="2.4*"/>
                                 <ColumnDefinition Width="50"/>
                                 <ColumnDefinition Width="1.6*"/>
-                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="155"/>
                                 <ColumnDefinition Width="85"/>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="78"/>
@@ -155,7 +161,30 @@
                             <TextBlock Grid.Column="2" Text="{x:Bind Descricao}" Foreground="#00FF66" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                             <TextBlock Grid.Column="3" Text="{x:Bind Tipo}" Foreground="{x:Bind ValorCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="4" Text="{x:Bind NomeCategoria}" Foreground="#00AA44" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="5" Text="{x:Bind ValorFormatado}" Foreground="{x:Bind ValorCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                            <!-- CHECKBOX DE CONFERÊNCIA VISUAL + VALOR -->
+                            <Grid Grid.Column="5" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{x:Bind Conferido, Mode=TwoWay}"
+                                          MinWidth="0"
+                                          MinHeight="0"
+                                          Padding="0"
+                                          Margin="0,0,6,0"
+                                          VerticalAlignment="Center"
+                                          ToolTipService.ToolTip="Marcar como conferido"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{x:Bind ValorFormatado}"
+                                           Foreground="{x:Bind ValorCor}"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+
                             <TextBlock Grid.Column="6" Text="{x:Bind ConciliadoSN}" Foreground="{x:Bind ConciliadoCor}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="7" Text="{x:Bind SaldoAposFormatado}" Foreground="{x:Bind SaldoAposCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             <Button Grid.Column="8"

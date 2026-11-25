@@ -118,9 +118,10 @@ namespace ContaMobi
                     }
                 }
 
-                // 3. Atualiza os totais de Receitas/Despesas do período e os 6 gráficos do Dashboard
+                // 3. Atualiza os totais de Receitas/Despesas do período e todos os gráficos do Dashboard
                 CarregarGraficosMovimentacao();
                 CarregarGraficosOrcamentoAno();
+                CarregarGraficoSaldoContas();
             }
             catch (Exception ex)
             {
@@ -261,6 +262,19 @@ namespace ContaMobi
                 $"DESPESAS REALIZADAS ({anoAtual})",
                 Color.FromArgb(255, 255, 112, 67),
                 realDespesas);
+        }
+
+        private void CarregarGraficoSaldoContas()
+        {
+            if (GraficoSaldoContas == null)
+                return;
+
+            var saldosContas = DashboardGraficosService.ObterSaldoPorContaCorrente();
+
+            GraficoSaldoContas.ConfigurarHierarquico(
+                "SALDO POR CONTA CORRENTE",
+                Color.FromArgb(255, 0, 255, 102),
+                saldosContas);
         }
 
         private void CboPeriodoGraficos_SelectionChanged(object sender, SelectionChangedEventArgs e)

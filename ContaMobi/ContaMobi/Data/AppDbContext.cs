@@ -19,6 +19,12 @@ namespace ContaMobi.Data
         public DbSet<ContaPR> ContasPR { get; set; }
         public DbSet<ContaPRParcela> ContasPRParcelas { get; set; }
 
+        // Módulo de Cartões de Crédito
+        public DbSet<Bandeira> Bandeiras { get; set; }
+        public DbSet<CartaoCredito> CartoesCredito { get; set; }
+        public DbSet<FaturaCartao> FaturasCartao { get; set; }
+        public DbSet<LancamentoCartao> LancamentosCartao { get; set; }
+
         public string DbPath { get; }
 
         public AppDbContext()
@@ -170,6 +176,149 @@ namespace ContaMobi.Data
                       .WithMany()
                       .HasForeignKey(o => o.CategoriaUuid)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // =================================================================
+            // MÓDULO DE CARTÕES DE CRÉDITO
+            // =================================================================
+
+            // Bandeiras de Cartão (bandeiras)
+            modelBuilder.Entity<Bandeira>(entity =>
+            {
+                entity.ToTable("bandeiras");
+                entity.HasKey(b => b.BandeiraUuid);
+
+                entity.HasIndex(b => b.UsuarioUuid)
+                      .HasDatabaseName("idx_bandeiras_usuario");
+
+                var dataSeed = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                entity.HasData(
+                    new Bandeira
+                    {
+                        BandeiraUuid = "11111111-1111-1111-1111-111111111101",
+                        UsuarioUuid = null,
+                        DescricaoBandeira = "Visa",
+                        IconeBandeira = "ms-appx:///Assets/Bandeiras/visa.png",
+                        Ativo = true,
+                        CriadoEm = dataSeed,
+                        UpdatedAt = dataSeed
+                    },
+                    new Bandeira
+                    {
+                        BandeiraUuid = "11111111-1111-1111-1111-111111111102",
+                        UsuarioUuid = null,
+                        DescricaoBandeira = "Mastercard",
+                        IconeBandeira = "ms-appx:///Assets/Bandeiras/mastercard.png",
+                        Ativo = true,
+                        CriadoEm = dataSeed,
+                        UpdatedAt = dataSeed
+                    },
+                    new Bandeira
+                    {
+                        BandeiraUuid = "11111111-1111-1111-1111-111111111103",
+                        UsuarioUuid = null,
+                        DescricaoBandeira = "Elo",
+                        IconeBandeira = "ms-appx:///Assets/Bandeiras/elo.png",
+                        Ativo = true,
+                        CriadoEm = dataSeed,
+                        UpdatedAt = dataSeed
+                    },
+                    new Bandeira
+                    {
+                        BandeiraUuid = "11111111-1111-1111-1111-111111111104",
+                        UsuarioUuid = null,
+                        DescricaoBandeira = "American Express",
+                        IconeBandeira = "ms-appx:///Assets/Bandeiras/amex.png",
+                        Ativo = true,
+                        CriadoEm = dataSeed,
+                        UpdatedAt = dataSeed
+                    },
+                    new Bandeira
+                    {
+                        BandeiraUuid = "11111111-1111-1111-1111-111111111105",
+                        UsuarioUuid = null,
+                        DescricaoBandeira = "Hipercard",
+                        IconeBandeira = "ms-appx:///Assets/Bandeiras/hipercard.png",
+                        Ativo = true,
+                        CriadoEm = dataSeed,
+                        UpdatedAt = dataSeed
+                    }
+                );
+            });
+
+            // Cartões de Crédito (cartoes_credito)
+            modelBuilder.Entity<CartaoCredito>(entity =>
+            {
+                entity.ToTable("cartoes_credito");
+                entity.HasKey(c => c.CartaoUuid);
+
+                entity.HasIndex(c => c.UsuarioUuid)
+                      .HasDatabaseName("idx_cartoes_credito_usuario");
+
+                entity.HasOne(c => c.Bandeira)
+                      .WithMany()
+                      .HasForeignKey(c => c.BandeiraUuid)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(c => c.ContaCorrente)
+                      .WithMany()
+                      .HasForeignKey(c => c.ContaUuid)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Faturas de Cartão (faturas_cartao)
+            modelBuilder.Entity<FaturaCartao>(entity =>
+            {
+                entity.ToTable("faturas_cartao");
+                entity.HasKey(f => f.FaturaUuid);
+
+                entity.HasIndex(f => new { f.CartaoUuid, f.MesAnoFatura })
+                      .IsUnique()
+                      .HasDatabaseName("idx_faturas_cartao_mesano");
+
+                entity.HasIndex(f => new { f.UsuarioUuid, f.VencimentoFatura })
+                      .HasDatabaseName("idx_faturas_cartao_vencimento");
+
+                entity.HasOne(f => f.CartaoCredito)
+                      .WithMany(c => c.Faturas)
+                      .HasForeignKey(f => f.CartaoUuid)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Lançamentos de Cartão (lancamentos_cartao)
+            modelBuilder.Entity<LancamentoCartao>(entity =>
+            {
+                entity.ToTable("lancamentos_cartao");
+                entity.HasKey(l => l.LancamentoCartaoUuid);
+
+                entity.HasIndex(l => new { l.CartaoUuid, l.DataLancamento })
+                      .HasDatabaseName("idx_lancamentos_cartao_data");
+
+                entity.HasIndex(l => l.FaturaUuid)
+                      .HasDatabaseName("idx_lancamentos_cartao_fatura");
+
+                entity.HasIndex(l => l.GrupoParcelamentoUuid)
+                      .HasDatabaseName("idx_lancamentos_cartao_grupo");
+
+                entity.HasOne(l => l.CartaoCredito)
+                      .WithMany()
+                      .HasForeignKey(l => l.CartaoUuid)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(l => l.FaturaCartao)
+                      .WithMany(f => f.Lancamentos)
+                      .HasForeignKey(l => l.FaturaUuid)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(l => l.Categoria)
+                      .WithMany()
+                      .HasForeignKey(l => l.CategoriaUuid)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(l => l.Entidade)
+                      .WithMany()
+                      .HasForeignKey(l => l.EntidadeUuid)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -9,13 +9,11 @@
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
-    <WinUISDKReferences>false</WinUISDKReferences>
-    <WindowsAppSDKBootstrapInitialize>false</WindowsAppSDKBootstrapInitialize>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
-    <WindowsPackageType>None</WindowsPackageType>
-    <BaseOutputPath>bin\Dev\</BaseOutputPath>
+    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Controls\GraficoPizzaControl.xaml" />
     <None Remove="Views\ContasPRBaixaWindow.xaml" />
@@ -43,27 +41,15 @@
     <Page Update="Views\TransferenciaWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-  </ItemGroup>
-
-  <ItemGroup>
     <Page Update="Views\ContasPRBaixaWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-  </ItemGroup>
-
-  <ItemGroup>
     <Page Update="Views\OrcamentoEditWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-  </ItemGroup>
-
-  <ItemGroup>
     <Page Update="Views\OrcamentosPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-  </ItemGroup>
-
-  <ItemGroup>
     <Page Update="Views\ContaPREditWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -103,6 +89,9 @@
     <Page Update="Views\janelas\LoginWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Update="Controls\GraficoPizzaControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>
@@ -118,23 +107,14 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup>
-    <Page Update="Controls\GraficoPizzaControl.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-
   <!-- Publish Properties -->
   <PropertyGroup>
-    <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
-    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <PublishReadyToRun>False</PublishReadyToRun>
+    <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
 
-  <!-- Mata o processo e libera .exe, .dll e .pri travados antes de cada compilação -->
-  <Target Name="DestravarExecutavel" BeforeTargets="BeforeBuild;GenerateProjectPriFile">
+  <!-- Encerra inst�ncia aberta antes de compilar -->
+  <Target Name="DestravarExecutavel" BeforeTargets="BeforeBuild">
     <Exec Command="taskkill /F /IM ContaMobi.exe 2&gt;nul &amp; exit /b 0" IgnoreExitCode="true" />
-    <Exec Command="powershell -NoProfile -Command &quot;Get-ChildItem '$(TargetDir)*' -Include *.exe,*.dll,*.pri,*.xbf | ForEach-Object { Rename-Item $_.FullName ($_.FullName + '.' + [Guid]::NewGuid().ToString().Substring(0,4) + '.old') -ErrorAction SilentlyContinue }&quot;" IgnoreExitCode="true" />
   </Target>
 </Project>

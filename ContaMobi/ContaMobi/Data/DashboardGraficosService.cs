@@ -102,6 +102,70 @@ namespace ContaMobi.Data
             return AgruparPorNivel1(categoriasMap, itensBrutos);
         }
 
+        /// <summary>
+        /// Calcula o saldo atual de cada conta corrente (Saldo Inicial + Créditos - Débitos até hoje)
+        /// para exibição no gráfico do Dashboard.
+        /// </summary>
+        public static List<CategoriaNivel1Grafico> ObterSaldoPorContaCorrente()
+        {
+            using var db = new AppDbContext();
+
+            DateTime hojeFim = DateTime.Today.AddDays(1).AddTicks(-1);
+
+            var contas = db.ContasCorrentes
+                .AsNoTracking()
+                .Include(c => c.Banco)
+                .ToList();
+
+            var lancamentosAteHoje = db.Set<LancamentoConta>()
+                .AsNoTracking()
+                .Where(l => l.DataLancamento <= hojeFim && !string.IsNullOrEmpty(l.ContaUuid))
+                .Select(l => new { l.ContaUuid, l.Tipo, l.Valor })
+                .ToList();
+
+            var resultado = new List<CategoriaNivel1Grafico>();
+
+            foreach (var conta in contas)
+            {
+                var movsConta = lancamentosAteHoje
+                    .Where(l => string.Equals(l.ContaUuid.Trim(), conta.ContaUuid.Trim(), StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                decimal creditos = movsConta
+                    .Where(l => l.Tipo == "C")
+                    .Sum(l => Math.Abs(l.Valor));
+
+                decimal debitos = movsConta
+                    .Where(l => l.Tipo == "D")
+                    .Sum(l => Math.Abs(l.Valor));
+
+                decimal saldoAtual = conta.SaldoInicial + creditos - debitos;
+
+                if (saldoAtual > 0m)
+                {
+                    resultado.Add(new CategoriaNivel1Grafico
+                    {
+                        CategoriaPaiUuid = conta.ContaUuid,
+                        Nome = conta.Descricao,
+                        ValorTotal = saldoAtual,
+                        Subcategorias = new List<SubcategoriaNivel2Grafico>
+                        {
+                            new SubcategoriaNivel2Grafico
+                            {
+                                CategoriaUuid = conta.ContaUuid,
+                                Nome = conta.BancoFormatado,
+                                Valor = saldoAtual
+                            }
+                        }
+                    });
+                }
+            }
+
+            return resultado
+                .OrderByDescending(x => x.ValorTotal)
+                .ToList();
+        }
+
         private static Dictionary<string, Categoria> CarregarMapaCategorias(AppDbContext db)
         {
             return db.Categorias
@@ -115,7 +179,6 @@ namespace ContaMobi.Data
             Dictionary<string, Categoria> categoriasMap,
             IEnumerable<(string CategoriaUuid, decimal Valor)> itensBrutos)
         {
-            // 1. Consolida valores por categoria lançada (Nível 2)
             var totaisPorCategoria = itensBrutos
                 .Where(x => !string.IsNullOrWhiteSpace(x.CategoriaUuid) && x.Valor > 0m)
                 .GroupBy(x => x.CategoriaUuid.Trim(), StringComparer.OrdinalIgnoreCase)
@@ -144,7 +207,6 @@ namespace ContaMobi.Data
                     }
                     else
                     {
-                        // Caso o lançamento esteja direto em Nível 1 ou sem pai vinculado
                         paiId = cat.CategoriaUuid.Trim();
                         nomePai = cat.Descricao;
                     }

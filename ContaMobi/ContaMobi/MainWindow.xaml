@@ -234,6 +234,47 @@
                                 <controls:GraficoPizzaControl x:Name="GraficoOrcamentoRealizadoReceitas" Grid.Column="0" />
                                 <controls:GraficoPizzaControl x:Name="GraficoOrcamentoRealizadoDespesas" Grid.Column="1" />
                             </Grid>
+
+                            <!-- BLOCO 3: SALDO POR CONTA CORRENTE + ESPAÇO RESERVADO CARTÕES DE CRÉDITO -->
+                            <Border Background="#051005" BorderBrush="#3399FF" BorderThickness="1" CornerRadius="4" Padding="12,8" Margin="0,6,0,0">
+                                <TextBlock Text="[ DISPONIBILIDADE FINANCEIRA // SALDO POR CONTA E CARTÕES ]"
+                                           FontSize="12" FontWeight="Bold" Foreground="#3399FF" />
+                            </Border>
+
+                            <Grid ColumnSpacing="14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- GRÁFICO DE SALDO EM CADA CONTA CORRENTE -->
+                                <controls:GraficoPizzaControl x:Name="GraficoSaldoContas" Grid.Column="0" />
+
+                                <!-- ESPAÇO RESERVADO PARA O FUTURO GRÁFICO DE CARTÕES DE CRÉDITO -->
+                                <Border x:Name="ContainerGraficoCartoes"
+                                        Grid.Column="1"
+                                        Background="#030A03"
+                                        BorderBrush="#005522"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="16"
+                                        MinHeight="380">
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                                        <TextBlock Text="[ CARTÕES DE CRÉDITO // MÓDULO FUTURO ]"
+                                                   FontSize="13"
+                                                   FontWeight="Bold"
+                                                   Foreground="#00CC55"
+                                                   HorizontalAlignment="Center" />
+                                        <TextBlock Text="Espaço reservado para o gráfico de faturas e limites de cartões."
+                                                   FontSize="11"
+                                                   Foreground="#008844"
+                                                   TextWrapping="Wrap"
+                                                   TextAlignment="Center"
+                                                   MaxWidth="280"
+                                                   HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
                         </StackPanel>
                     </ScrollViewer>
 

@@ -34,14 +34,8 @@
                     <!-- SENHA -->
                     <StackPanel Spacing="4">
                         <TextBlock Text="CHAVE DE ACESSO (SENHA):" FontSize="11" FontWeight="SemiBold" Foreground="#00FF66"/>
-                        <PasswordBox x:Name="TxtSenha" PlaceholderText="********" Height="36"/>
+                        <PasswordBox x:Name="TxtSenha" PlaceholderText="********" Height="36" KeyDown="TxtSenha_KeyDown"/>
                     </StackPanel>
-
-                    <!-- LINK / BOTÃO ESQUECI MINHA SENHA -->
-                    <Button x:Name="BtnEsqueciSenha" Content="&gt; [Esqueci minha senha / Recuperar]" 
-                            Click="BtnEsqueciSenha_Click"
-                            Background="Transparent" BorderThickness="0" Foreground="#00AA44"
-                            FontSize="11" Padding="0" HorizontalAlignment="Left"/>
 
                     <TextBlock Text="----------------------------------------" FontSize="11" Foreground="#006622"/>
 
@@ -52,6 +46,12 @@
                         <Button x:Name="BtnCancelar" Content="[ESC] FECHAR" Click="BtnCancelar_Click"
                                 Height="34" HorizontalAlignment="Stretch"/>
                     </StackPanel>
+
+                    <!-- LINK / BOTÃO ESQUECI MINHA SENHA (APÓS OS BOTÕES PRINCIPAIS) -->
+                    <Button x:Name="BtnEsqueciSenha" Content="&gt; [Esqueci minha senha / Recuperar]" 
+                            Click="BtnEsqueciSenha_Click"
+                            Background="Transparent" BorderThickness="0" Foreground="#00AA44"
+                            FontSize="11" Padding="0" Margin="0,2,0,0" HorizontalAlignment="Left"/>
                 </StackPanel>
 
                 <!-- ========================================== -->

@@ -42,6 +42,18 @@ namespace ContaMobi
             }
         }
 
+        private void TxtSenha_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Enter)
+            {
+                e.Handled = true;
+                if (BtnLogin.IsEnabled)
+                {
+                    ExecutarLogin();
+                }
+            }
+        }
+
         private async void ExecutarLogin()
         {
             TxtErro.Visibility = Visibility.Collapsed;

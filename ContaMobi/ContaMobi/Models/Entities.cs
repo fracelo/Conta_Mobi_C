@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace ContaMobi.Models
@@ -465,8 +466,6 @@ namespace ContaMobi.Models
         [Required]
         [MaxLength(1)]
         [Column("tipo")]
-
-
         public string Tipo { get; set; } = "D";
 
         [Column("valor", TypeName = "decimal(15,2)")]
@@ -511,6 +510,9 @@ namespace ContaMobi.Models
 
         [NotMapped]
         public string NomeCategoria => Categoria?.Descricao ?? "-";
+
+        [NotMapped]
+        public bool Conferido { get; set; } = false;
 
         [NotMapped]
         public string ValorFormatado
@@ -774,6 +776,382 @@ namespace ContaMobi.Models
         [NotMapped]
         public string DestaqueCor { get; set; } = "#00FF66";
     }
+
+    // =========================================================================
+    // MÓDULO DE CARTÕES DE CRÉDITO
+    // =========================================================================
+
+    [Table("bandeiras")]
+    public class Bandeira
+    {
+        [Key]
+        [MaxLength(36)]
+        [Column("bandeirasuuid")]
+        public string BandeiraUuid { get; set; } = Guid.NewGuid().ToString();
+
+        [MaxLength(36)]
+        [Column("usuariouuid")]
+        public string? UsuarioUuid { get; set; }
+
+        [Required]
+        [MaxLength(80)]
+        [Column("descricao_bandeira")]
+        public string DescricaoBandeira { get; set; } = string.Empty;
+
+        [MaxLength(255)]
+        [Column("icone_bandeira")]
+        public string? IconeBandeira { get; set; }
+
+        [Column("ativo")]
+        public bool Ativo { get; set; } = true;
+
+        [Column("criado_em")]
+        public DateTime? CriadoEm { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [NotMapped]
+        public string IconeCaminhoResolvido
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(IconeBandeira))
+                    return "ms-appx:///Assets/Bandeiras/cartao_padrao.png";
+
+                if (IconeBandeira.StartsWith("ms-appx://", StringComparison.OrdinalIgnoreCase) ||
+                    IconeBandeira.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    return IconeBandeira;
+
+                string pastaLocal = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "ContaMobi", "Bandeiras");
+
+                return Path.Combine(pastaLocal, IconeBandeira);
+            }
+        }
+
+        [NotMapped]
+        public string StatusTexto => Ativo ? "ATIVO" : "INATIVO";
+
+        [NotMapped]
+        public string StatusCor => Ativo ? "#00FF66" : "#FF5555";
+
+        public override string ToString() => DescricaoBandeira ?? string.Empty;
+    }
+
+    [Table("cartoes_credito")]
+    public class CartaoCredito
+    {
+        [Key]
+        [MaxLength(36)]
+        [Column("cartaouuid")]
+        public string CartaoUuid { get; set; } = Guid.NewGuid().ToString();
+
+        [Required]
+        [MaxLength(36)]
+        [Column("usuariouuid")]
+        public string UsuarioUuid { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(36)]
+        [Column("bandeirauuid")]
+        public string BandeiraUuid { get; set; } = string.Empty;
+
+        [MaxLength(36)]
+        [Column("contauuid")]
+        public string? ContaUuid { get; set; }
+
+        [Required]
+        [MaxLength(100)]
+        [Column("descricao")]
+        public string Descricao { get; set; } = string.Empty;
+
+        [MaxLength(4)]
+        [Column("ultimos_digitos")]
+        public string? UltimosDigitos { get; set; }
+
+        [Required]
+        [Column("dia_fechamento")]
+        public int DiaFechamento { get; set; } = 1;
+
+        [Required]
+        [Column("dia_vencimento")]
+        public int DiaVencimento { get; set; } = 10;
+
+        [Column("limite_total", TypeName = "decimal(15,2)")]
+        public decimal LimiteTotal { get; set; } = 0.00m;
+
+        [Column("limite_atual", TypeName = "decimal(15,2)")]
+        public decimal LimiteAtual { get; set; } = 0.00m;
+
+        [MaxLength(10)]
+        [Column("cor_hex")]
+        public string CorHex { get; set; } = "#008552";
+
+        [Column("ativo")]
+        public bool Ativo { get; set; } = true;
+
+        [Column("criado_em")]
+        public DateTime? CriadoEm { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey("BandeiraUuid")]
+        public virtual Bandeira? Bandeira { get; set; }
+
+        [ForeignKey("ContaUuid")]
+        public virtual ContaCorrente? ContaCorrente { get; set; }
+
+        public virtual ICollection<FaturaCartao> Faturas { get; set; } = new List<FaturaCartao>();
+
+        [NotMapped]
+        public string NomeExibicao => string.IsNullOrWhiteSpace(UltimosDigitos)
+            ? Descricao
+            : $"{Descricao} (•••• {UltimosDigitos})";
+
+        [NotMapped]
+        public string NomeBandeira => Bandeira?.DescricaoBandeira ?? "-";
+
+        [NotMapped]
+        public decimal LimiteUtilizado => Math.Max(0m, LimiteTotal - LimiteAtual);
+
+        [NotMapped]
+        public double PercentualUtilizado => LimiteTotal > 0m
+            ? Math.Min(100.0, (double)(LimiteUtilizado / LimiteTotal) * 100.0)
+            : 0.0;
+
+        [NotMapped]
+        public string LimiteTotalFormatado => LimiteTotal.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public string LimiteAtualFormatado => LimiteAtual.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public string LimiteUtilizadoFormatado => LimiteUtilizado.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public string LimiteAtualCor => LimiteAtual > 0m ? "#00FF66" : "#FF5555";
+
+        [NotMapped]
+        public string CicloFormatado => $"Fecha dia {DiaFechamento:D2} • Vence dia {DiaVencimento:D2}";
+
+        [NotMapped]
+        public string StatusTexto => Ativo ? "ATIVO" : "INATIVO";
+
+        [NotMapped]
+        public string StatusCor => Ativo ? "#00FF66" : "#FF5555";
+
+        public override string ToString() => NomeExibicao;
+    }
+
+    [Table("faturas_cartao")]
+    public class FaturaCartao
+    {
+        [Key]
+        [MaxLength(36)]
+        [Column("faturauuid")]
+        public string FaturaUuid { get; set; } = Guid.NewGuid().ToString();
+
+        [Required]
+        [MaxLength(36)]
+        [Column("usuariouuid")]
+        public string UsuarioUuid { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(36)]
+        [Column("cartaouuid")]
+        public string CartaoUuid { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(7)]
+        [Column("mesano_fatura")]
+        public string MesAnoFatura { get; set; } = DateTime.Today.ToString("yyyy-MM");
+
+        [Required]
+        [Column("data_fechamento")]
+        public DateTime DataFechamento { get; set; }
+
+        [Required]
+        [Column("vencimento_fatura")]
+        public DateTime VencimentoFatura { get; set; }
+
+        [Column("total_fatura", TypeName = "decimal(15,2)")]
+        public decimal TotalFatura { get; set; } = 0.00m;
+
+        [Column("total_pago", TypeName = "decimal(15,2)")]
+        public decimal TotalPago { get; set; } = 0.00m;
+
+        [Column("saldo_fatura", TypeName = "decimal(15,2)")]
+        public decimal SaldoFatura { get; set; } = 0.00m;
+
+        [Required]
+        [MaxLength(15)]
+        [Column("status_fatura")]
+        public string StatusFatura { get; set; } = "ABERTA";
+
+        [Column("data_pagamento")]
+        public DateTime? DataPagamento { get; set; }
+
+        [MaxLength(36)]
+        [Column("lancamento_pagamento_uuid")]
+        public string? LancamentoPagamentoUuid { get; set; }
+
+        [Column("criado_em")]
+        public DateTime? CriadoEm { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey("CartaoUuid")]
+        public virtual CartaoCredito? CartaoCredito { get; set; }
+
+        public virtual ICollection<LancamentoCartao> Lancamentos { get; set; } = new List<LancamentoCartao>();
+
+        [NotMapped]
+        public string CompetenciaFormatada
+        {
+            get
+            {
+                if (DateTime.TryParseExact(MesAnoFatura + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
+                {
+                    var cultura = new CultureInfo("pt-BR");
+                    return $"{dt.Month:D2}/{dt.Year:D4} - {dt.ToString("MMMM", cultura).ToUpperInvariant()}";
+                }
+                return MesAnoFatura;
+            }
+        }
+
+        [NotMapped]
+        public string VencimentoFormatado => VencimentoFatura.ToString("dd/MM/yyyy");
+
+        [NotMapped]
+        public string TotalFaturaFormatado => TotalFatura.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public string TotalPagoFormatado => TotalPago.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public string SaldoFaturaFormatado => SaldoFatura.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public bool EstaPaga => StatusFatura == "PAGA" || (TotalFatura > 0m && SaldoFatura <= 0m);
+
+        [NotMapped]
+        public bool PodePagar => !EstaPaga && SaldoFatura > 0m;
+
+        [NotMapped]
+        public string StatusCor => StatusFatura switch
+        {
+            "PAGA" => "#00FF66",
+            "FECHADA" => VencimentoFatura.Date < DateTime.Today ? "#FF5555" : "#FFAA00",
+            "PARCIAL" => "#FFAA00",
+            _ => "#3399FF"
+        };
+    }
+
+    [Table("lancamentos_cartao")]
+    public class LancamentoCartao
+    {
+        [Key]
+        [MaxLength(36)]
+        [Column("lancamentocartaouuid")]
+        public string LancamentoCartaoUuid { get; set; } = Guid.NewGuid().ToString();
+
+        [Required]
+        [MaxLength(36)]
+        [Column("usuariouuid")]
+        public string UsuarioUuid { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(36)]
+        [Column("cartaouuid")]
+        public string CartaoUuid { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(36)]
+        [Column("faturauuid")]
+        public string FaturaUuid { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(36)]
+        [Column("categoriauuid")]
+        public string CategoriaUuid { get; set; } = string.Empty;
+
+        [MaxLength(36)]
+        [Column("entidadeuuid")]
+        public string? EntidadeUuid { get; set; }
+
+        [Required]
+        [MaxLength(36)]
+        [Column("grupo_parcelamento_uuid")]
+        public string GrupoParcelamentoUuid { get; set; } = Guid.NewGuid().ToString();
+
+        [Required]
+        [Column("data_lancamento")]
+        public DateTime DataLancamento { get; set; } = DateTime.Today;
+
+        [Required]
+        [MaxLength(150)]
+        [Column("descricao")]
+        public string Descricao { get; set; } = string.Empty;
+
+        [Column("valor_parcela", TypeName = "decimal(15,2)")]
+        public decimal ValorParcela { get; set; } = 0.00m;
+
+        [Column("nr_parcelas")]
+        public int NrParcelas { get; set; } = 1;
+
+        [Column("parcela_atual")]
+        public int ParcelaAtual { get; set; } = 1;
+
+        [Column("observacao")]
+        public string? Observacao { get; set; }
+
+        [Column("criado_em")]
+        public DateTime? CriadoEm { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey("CartaoUuid")]
+        public virtual CartaoCredito? CartaoCredito { get; set; }
+
+        [ForeignKey("FaturaUuid")]
+        public virtual FaturaCartao? FaturaCartao { get; set; }
+
+        [ForeignKey("CategoriaUuid")]
+        public virtual Categoria? Categoria { get; set; }
+
+        [ForeignKey("EntidadeUuid")]
+        public virtual Entidade? Entidade { get; set; }
+
+        [NotMapped]
+        public string ParcelaFormatada => $"{ParcelaAtual:D2}/{NrParcelas:D2}";
+
+        [NotMapped]
+        public bool EhParcelado => NrParcelas > 1;
+
+        [NotMapped]
+        public string DataLancamentoFormatada => DataLancamento.ToString("dd/MM/yyyy");
+
+        [NotMapped]
+        public string NomeCategoria => Categoria?.Descricao ?? "-";
+
+        [NotMapped]
+        public string NomeFavorecido => Entidade?.NomeRazao ?? "-";
+
+        [NotMapped]
+        public string ValorParcelaFormatado => ValorParcela.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public string ValorCor => "#FF5555";
+    }
+
+    // =========================================================================
+    // VIEWMODELS DE ORÇAMENTO
+    // =========================================================================
 
     public class OrcamentoMesResumo
     {
