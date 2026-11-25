@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ContaMobi.Models;
 using System;
+using System.Data.Common;
 using System.IO;
 
 namespace ContaMobi.Data
@@ -27,6 +28,8 @@ namespace ContaMobi.Data
 
         public string DbPath { get; }
 
+        private static bool _schemaVerificado = false;
+
         public AppDbContext()
         {
             string pastaLocal = Path.Combine(
@@ -39,6 +42,61 @@ namespace ContaMobi.Data
             }
 
             DbPath = Path.Combine(pastaLocal, "contamobi.db");
+
+            if (!_schemaVerificado)
+            {
+                _schemaVerificado = true;
+                GarantirColunasAtualizadas();
+            }
+        }
+
+        private void GarantirColunasAtualizadas()
+        {
+            try
+            {
+                if (!File.Exists(DbPath))
+                    return;
+
+                using var conn = Database.GetDbConnection();
+                conn.Open();
+
+                GarantirColunaSqlite(conn, "lancamentos_contas", "numerodocumento", "TEXT NULL");
+                GarantirColunaSqlite(conn, "contas_pr", "numerodocumento", "TEXT NULL");
+                GarantirColunaSqlite(conn, "contas_pr_parcelas", "numerodocumento", "TEXT NULL");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MIGRACAO SQLITE]: {ex.Message}");
+            }
+        }
+
+        private static void GarantirColunaSqlite(DbConnection conn, string tabela, string coluna, string definicao)
+        {
+            bool tabelaExiste = false;
+            bool possuiColuna = false;
+
+            using (var cmdCheck = conn.CreateCommand())
+            {
+                cmdCheck.CommandText = $"PRAGMA table_info('{tabela}');";
+                using var reader = cmdCheck.ExecuteReader();
+                while (reader.Read())
+                {
+                    tabelaExiste = true;
+                    string nomeColuna = reader["name"]?.ToString() ?? string.Empty;
+                    if (string.Equals(nomeColuna, coluna, StringComparison.OrdinalIgnoreCase))
+                    {
+                        possuiColuna = true;
+                        break;
+                    }
+                }
+            }
+
+            if (tabelaExiste && !possuiColuna)
+            {
+                using var cmdAlter = conn.CreateCommand();
+                cmdAlter.CommandText = $"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao};";
+                cmdAlter.ExecuteNonQuery();
+            }
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -463,6 +465,10 @@ namespace ContaMobi.Models
         [Column("descricao")]
         public string Descricao { get; set; } = string.Empty;
 
+        [MaxLength(35)]
+        [Column("numerodocumento")]
+        public string? NumeroDocumento { get; set; }
+
         [Required]
         [MaxLength(1)]
         [Column("tipo")]
@@ -504,6 +510,9 @@ namespace ContaMobi.Models
 
         [NotMapped]
         public string DescricaoConta => ContaCorrente?.Descricao ?? "-";
+
+        [NotMapped]
+        public string NumeroDocumentoFormatado => string.IsNullOrWhiteSpace(NumeroDocumento) ? "-" : NumeroDocumento;
 
         [NotMapped]
         public string DataLancamentoFormatada => DataLancamento.ToString("dd/MM/yyyy");
@@ -585,6 +594,10 @@ namespace ContaMobi.Models
         [Column("descricao")]
         public string Descricao { get; set; } = string.Empty;
 
+        [MaxLength(35)]
+        [Column("numerodocumento")]
+        public string? NumeroDocumento { get; set; }
+
         [Required]
         [Column("data_lancamento")]
         public DateTime DataLancamento { get; set; } = DateTime.Today;
@@ -652,6 +665,9 @@ namespace ContaMobi.Models
 
         [NotMapped]
         public string DescricaoConta => ContaCorrente?.Descricao ?? "-";
+
+        [NotMapped]
+        public string NumeroDocumentoFormatado => string.IsNullOrWhiteSpace(NumeroDocumento) ? "-" : NumeroDocumento;
 
         [NotMapped]
         public string NomeCategoria => Categoria?.Descricao ?? "-";
@@ -758,6 +774,10 @@ namespace ContaMobi.Models
         [Column("valor_parcela", TypeName = "decimal(15,2)")]
         public decimal ValorParcela { get; set; } = 0.00m;
 
+        [MaxLength(35)]
+        [Column("numerodocumento")]
+        public string? NumeroDocumento { get; set; }
+
         [Column("criado_em")]
         public DateTime? CriadoEm { get; set; } = DateTime.UtcNow;
 
@@ -828,6 +848,43 @@ namespace ContaMobi.Models
                     "ContaMobi", "Bandeiras");
 
                 return Path.Combine(pastaLocal, IconeBandeira);
+            }
+        }
+
+        [NotMapped]
+        public ImageSource? IconeSource
+        {
+            get
+            {
+                try
+                {
+                    string caminho = IconeCaminhoResolvido;
+                    if (string.IsNullOrWhiteSpace(caminho))
+                        return null;
+
+                    if (caminho.StartsWith("ms-appx://", StringComparison.OrdinalIgnoreCase) ||
+                        caminho.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new BitmapImage(new Uri(caminho));
+                    }
+
+                    if (File.Exists(caminho))
+                    {
+                        var bmp = new BitmapImage();
+                        using (var fs = File.OpenRead(caminho))
+                        using (var ras = fs.AsRandomAccessStream())
+                        {
+                            bmp.SetSource(ras);
+                        }
+                        return bmp;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ERRO ICONE BANDEIRA]: {ex.Message}");
+                }
+
+                return null;
             }
         }
 
@@ -913,6 +970,9 @@ namespace ContaMobi.Models
 
         [NotMapped]
         public string NomeBandeira => Bandeira?.DescricaoBandeira ?? "-";
+
+        [NotMapped]
+        public ImageSource? IconeBandeiraSource => Bandeira?.IconeSource;
 
         [NotMapped]
         public decimal LimiteUtilizado => Math.Max(0m, LimiteTotal - LimiteAtual);

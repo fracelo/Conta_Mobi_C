@@ -40,7 +40,7 @@ namespace ContaMobi.Views
         {
             this.InitializeComponent();
             UIThemeHelper.AplicarBarraTituloRetro(this);
-            this.AppWindow.Resize(new SizeInt32(620, 660));
+            this.AppWindow.Resize(new SizeInt32(620, 730));
             CentralizarJanela();
 
             _conta = ContasPRBaixaService.ObterContaCompleta(contasPRUuid)
@@ -83,6 +83,7 @@ namespace ContaMobi.Views
 
             TxtParcelaBadge.Text = $"PARCELA {_conta.NumeroParcela:D2}/{_conta.TotalParcelas:D2}";
             TxtDescricao.Text = _conta.Descricao;
+            TxtNumeroDocumento.Text = _conta.NumeroDocumento ?? string.Empty;
             TxtVencimento.Text = _conta.DataVencimento.ToString("dd/MM/yyyy");
             TxtEntidade.Text = _conta.NomeEntidade;
             TxtValorOriginal.Text = _conta.Valor.ToString("C2", _cultura);
@@ -379,6 +380,10 @@ namespace ContaMobi.Views
                 return;
             }
 
+            string? numeroDocumento = string.IsNullOrWhiteSpace(TxtNumeroDocumento.Text)
+                ? null
+                : TxtNumeroDocumento.Text.Trim();
+
             decimal descontoFinal = _desconto;
             decimal acrescimoFinal = _acrescimo;
             bool gerarSobra = false;
@@ -474,7 +479,8 @@ namespace ContaMobi.Views
                     valorSobra: valorSobra,
                     dataVencimentoSobra: dataVencimentoSobra,
                     usuarioUuid: usuarioUuid,
-                    categoriaUuid: categoriaSelecionada.CategoriaUuid);
+                    categoriaUuid: categoriaSelecionada.CategoriaUuid,
+                    numeroDocumento: numeroDocumento);
 
                 BaixaConfirmada = true;
                 this.Close();

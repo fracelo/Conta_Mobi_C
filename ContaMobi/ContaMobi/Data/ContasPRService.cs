@@ -40,7 +40,6 @@ namespace ContaMobi.Data
 
             using var db = new AppDbContext();
 
-            // Verifica se a coluna loteuuid já existe na tabela contas_pr; se não existir, recria a estrutura nova
             try
             {
                 _ = db.ContasPR.AsNoTracking().Select(c => c.LoteUuid).FirstOrDefault();
@@ -66,6 +65,7 @@ namespace ContaMobi.Data
                     categoriauuid TEXT NOT NULL,
                     entidadeuuid TEXT NULL,
                     descricao TEXT NOT NULL,
+                    numerodocumento TEXT NULL,
                     data_lancamento TEXT NOT NULL,
                     data_vencimento TEXT NOT NULL,
                     valor_base TEXT NOT NULL DEFAULT '0.0',
@@ -99,6 +99,7 @@ namespace ContaMobi.Data
                     valor_base TEXT NOT NULL DEFAULT '0.0',
                     data_vencimento TEXT NOT NULL,
                     valor_parcela TEXT NOT NULL DEFAULT '0.0',
+                    numerodocumento TEXT NULL,
                     criado_em TEXT NULL,
                     updated_at TEXT NULL,
                     CONSTRAINT FK_contas_pr_parcelas_contas_pr FOREIGN KEY (contaspruuid) REFERENCES contas_pr (contaspruuid) ON DELETE CASCADE
@@ -147,6 +148,7 @@ namespace ContaMobi.Data
                 string termo = termoBusca.Trim().ToLowerInvariant();
                 lista = lista.Where(c =>
                     c.Descricao.ToLowerInvariant().Contains(termo) ||
+                    (!string.IsNullOrWhiteSpace(c.NumeroDocumento) && c.NumeroDocumento.ToLowerInvariant().Contains(termo)) ||
                     c.NomeEntidade.ToLowerInvariant().Contains(termo) ||
                     c.NomeCategoria.ToLowerInvariant().Contains(termo)).ToList();
             }
@@ -212,7 +214,8 @@ namespace ContaMobi.Data
                     IntervaloDias = conta.IntervaloDias > 0 ? conta.IntervaloDias : 30,
                     ValorBase = conta.ValorBase > 0 ? conta.ValorBase : conta.Valor,
                     DataVencimento = conta.DataVencimento == default ? DateTime.Today : conta.DataVencimento,
-                    ValorParcela = conta.Valor
+                    ValorParcela = conta.Valor,
+                    NumeroDocumento = conta.NumeroDocumento
                 });
             }
 
@@ -244,11 +247,8 @@ namespace ContaMobi.Data
                 : dadosBase.LoteUuid;
 
             int totalParcelas = Math.Max(1, gradeParcelas.Count);
-
-            // Remove sufixo antigo "(01/12)" da descrição base para não duplicar ao editar
             string descricaoLimpa = LimparSufixoParcela(dadosBase.Descricao);
 
-            // Busca contas e parcelas já existentes deste lote (para o caso de edição)
             var contasExistentesLote = db.ContasPR
                 .Where(c => c.LoteUuid == loteUuid)
                 .ToList();
@@ -293,6 +293,7 @@ namespace ContaMobi.Data
                     contaExistente.CategoriaUuid = dadosBase.CategoriaUuid;
                     contaExistente.EntidadeUuid = dadosBase.EntidadeUuid;
                     contaExistente.Descricao = descricaoFinal;
+                    contaExistente.NumeroDocumento = dadosBase.NumeroDocumento;
                     contaExistente.DataLancamento = dadosBase.DataLancamento.Date;
                     contaExistente.DataVencimento = itemGrade.DataVencimento.Date;
                     contaExistente.ValorBase = Math.Abs(dadosBase.ValorBase);
@@ -303,7 +304,6 @@ namespace ContaMobi.Data
                     contaExistente.Valor = Math.Abs(itemGrade.ValorParcela);
                     contaExistente.UpdatedAt = DateTime.UtcNow;
 
-                    // Se esta é a parcela aberta para edição, aplica também os dados de baixa (Multa, Juro, Pagto)
                     if (contaPRUuid == dadosBase.ContasPRUuid || totalParcelas == 1)
                     {
                         contaExistente.Multa = Math.Abs(dadosBase.Multa);
@@ -332,6 +332,7 @@ namespace ContaMobi.Data
                         CategoriaUuid = dadosBase.CategoriaUuid,
                         EntidadeUuid = dadosBase.EntidadeUuid,
                         Descricao = descricaoFinal,
+                        NumeroDocumento = dadosBase.NumeroDocumento,
                         DataLancamento = dadosBase.DataLancamento.Date,
                         DataVencimento = itemGrade.DataVencimento.Date,
                         ValorBase = Math.Abs(dadosBase.ValorBase),
@@ -351,7 +352,6 @@ namespace ContaMobi.Data
                     db.ContasPR.Add(novaConta);
                 }
 
-                // Insere a linha correspondente na tabela adicional contas_pr_parcelas
                 var novaParcelaGrid = new ContaPRParcela
                 {
                     ParcelaUuid = Guid.NewGuid().ToString(),
@@ -364,6 +364,7 @@ namespace ContaMobi.Data
                     ValorBase = Math.Abs(dadosBase.ValorBase),
                     DataVencimento = itemGrade.DataVencimento.Date,
                     ValorParcela = Math.Abs(itemGrade.ValorParcela),
+                    NumeroDocumento = dadosBase.NumeroDocumento,
                     CriadoEm = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -371,7 +372,6 @@ namespace ContaMobi.Data
                 db.ContasPRParcelas.Add(novaParcelaGrid);
             }
 
-            // Se na edição o usuário diminuiu a quantidade de parcelas, remove as excedentes não quitadas
             if (!ehNovo && contasExistentesLote.Count > 0)
             {
                 var excedentes = contasExistentesLote

@@ -60,6 +60,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -76,17 +77,28 @@
                     <TextBlock x:Name="TxtVencimento" Text="00/00/0000" FontSize="14" FontWeight="Bold" Foreground="#FFAA00" HorizontalAlignment="Right" />
                 </StackPanel>
 
-                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
+                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
+                    <TextBlock Text="NÚMERO DO DOCUMENTO (OPCIONAL - LEVADO PARA A CONTA CORRENTE):" FontSize="11" FontWeight="Bold" Foreground="#00FF66" />
+                    <TextBox
+                        x:Name="TxtNumeroDocumento"
+                        MaxLength="35"
+                        PlaceholderText="Ex: NF 12345, PIX-9876, COMPROVANTE..."
+                        Background="#0A0E14"
+                        Foreground="#E2E8F0"
+                        BorderBrush="#334155" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Grid.Column="0" Spacing="2">
                     <TextBlock Text="ENTIDADE / FAVORECIDO:" FontSize="11" Foreground="#8899AA" />
                     <TextBlock x:Name="TxtEntidade" Text="-" FontSize="13" Foreground="#CBD5E1" />
                 </StackPanel>
 
-                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
+                <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2">
                     <TextBlock Text="VALOR DA PARCELA:" FontSize="11" Foreground="#8899AA" HorizontalAlignment="Right" />
                     <TextBlock x:Name="TxtValorOriginal" Text="R$ 0,00" FontSize="15" FontWeight="Bold" Foreground="#00FF66" HorizontalAlignment="Right" />
                 </StackPanel>
 
-                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
+                <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
                     <TextBlock Text="CATEGORIA (*):" FontSize="11" FontWeight="Bold" Foreground="#00FF66" />
                     <ComboBox
                         x:Name="CboCategoria"

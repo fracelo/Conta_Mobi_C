@@ -113,7 +113,14 @@
                                     <TextBox x:Name="TxtDescricao" PlaceholderText="Informe o historico / descricao do lancamento..." Height="34"/>
                                 </StackPanel>
 
-                                <!-- LINHA 4: ENTIDADE (AUTO BUSCA LIKE) COM BOTÃO [+] ADD -->
+                                <!-- LINHA 4: NÚMERO DO DOCUMENTO (OPCIONAL, ALFANUMÉRICO ATÉ 35 CARACTERES) -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="NUMERO DO DOCUMENTO (OPCIONAL):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <TextBox x:Name="TxtNumeroDocumento" MaxLength="35"
+                                             PlaceholderText="Ex: NF 12345, PIX-9876, BOLETO 001..." Height="34"/>
+                                </StackPanel>
+
+                                <!-- LINHA 5: ENTIDADE (AUTO BUSCA LIKE) COM BOTÃO [+] ADD -->
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="ENTIDADE / FAVORECIDO (DIGITE PARA FILTRAR):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
                                     <Grid ColumnSpacing="8">
@@ -134,7 +141,7 @@
                                     </Grid>
                                 </StackPanel>
 
-                                <!-- LINHA 5: VALOR, CONCILIADO E DATA CONCILIADO -->
+                                <!-- LINHA 6: VALOR, CONCILIADO E DATA CONCILIADO -->
                                 <Grid ColumnSpacing="14">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="1.5*"/>

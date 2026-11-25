@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+ï»¿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -12,10 +12,13 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
     <PublishTrimmed>false</PublishTrimmed>
+    <WindowsPackageType>None</WindowsPackageType>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Controls\GraficoPizzaControl.xaml" />
+    <None Remove="Views\BandeiraEditWindow.xaml" />
+    <None Remove="Views\BandeirasPage.xaml" />
     <None Remove="Views\ContasPRBaixaWindow.xaml" />
     <None Remove="Views\OrcamentoEditWindow.xaml" />
     <None Remove="Views\OrcamentosPage.xaml" />
@@ -107,13 +110,25 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <Page Update="Views\BandeiraEditWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Views\BandeirasPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+
   <!-- Publish Properties -->
   <PropertyGroup>
     <PublishReadyToRun>False</PublishReadyToRun>
     <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
 
-  <!-- Encerra instância aberta antes de compilar -->
+  <!-- Encerra instï¿½ncia aberta antes de compilar -->
   <Target Name="DestravarExecutavel" BeforeTargets="BeforeBuild">
     <Exec Command="taskkill /F /IM ContaMobi.exe 2&gt;nul &amp; exit /b 0" IgnoreExitCode="true" />
   </Target>

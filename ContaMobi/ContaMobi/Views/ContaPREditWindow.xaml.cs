@@ -43,7 +43,7 @@ namespace ContaMobi.Views
         {
             this.InitializeComponent();
             UIThemeHelper.AplicarBarraTituloRetro(this);
-            this.AppWindow.Resize(new SizeInt32(900, 740));
+            this.AppWindow.Resize(new SizeInt32(900, 800));
 
             _contaPR = contaPR;
             ContasPRService.GarantirTabelasCriadas();
@@ -295,6 +295,7 @@ namespace ContaMobi.Views
 
             TxtDataLancamento.Text = (_contaPR.DataLancamento == default ? DateTime.Today : _contaPR.DataLancamento).ToString("dd/MM/yyyy");
             TxtDescricao.Text = _contaPR.Descricao ?? string.Empty;
+            TxtNumeroDocumento.Text = _contaPR.NumeroDocumento ?? string.Empty;
 
             _entidadeSelecionada = null;
             AsbEntidade.Text = string.Empty;
@@ -817,6 +818,10 @@ namespace ContaMobi.Views
                 return;
             }
 
+            string? numeroDocumento = string.IsNullOrWhiteSpace(TxtNumeroDocumento.Text)
+                ? null
+                : TxtNumeroDocumento.Text.Trim();
+
             if (!int.TryParse(TxtNumeroParcelas.Text.Trim(), out int qtdParcelas) || qtdParcelas < 1)
             {
                 ExibirMensagem("> [ERRO] O numero de parcelas nao pode ser menor que 1.", true);
@@ -861,6 +866,7 @@ namespace ContaMobi.Views
                 _contaPR.CategoriaUuid = categoriaSelecionada.CategoriaUuid;
                 _contaPR.EntidadeUuid = _entidadeSelecionada.EntidadeUuid;
                 _contaPR.Descricao = descricao;
+                _contaPR.NumeroDocumento = numeroDocumento;
                 _contaPR.DataLancamento = dtLanc;
                 _contaPR.ValorBase = _valorBase > 0 ? _valorBase : _gradeParcelas.Sum(p => p.ValorParcela);
                 _contaPR.ModoParcelamento = ObterModoParcelamentoSelecionado();

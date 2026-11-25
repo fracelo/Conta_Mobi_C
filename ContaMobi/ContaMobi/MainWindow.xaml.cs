@@ -357,6 +357,14 @@ namespace ContaMobi
                     MainContentFrame.Visibility = Visibility.Visible;
                     MainContentFrame.Navigate(typeof(EntidadesPage));
                 }
+
+                else if (modulo == "CAD_BANDEIRAS" || modulo == "BANDEIRAS")
+                {
+                    PainelDashboard.Visibility = Visibility.Collapsed;
+                    MainContentFrame.Visibility = Visibility.Visible;
+                    MainContentFrame.Navigate(typeof(BandeirasPage));
+                }
+
                 else if (modulo == "MOV_LANCAMENTOS" || modulo == "LANCAMENTOS")
                 {
                     PainelDashboard.Visibility = Visibility.Collapsed;
@@ -380,7 +388,9 @@ namespace ContaMobi
                     PainelDashboard.Visibility = Visibility.Collapsed;
                     MainContentFrame.Visibility = Visibility.Visible;
                     MainContentFrame.Navigate(typeof(OrcamentosPage));
+
                 }
+               
                 else
                 {
                     PainelDashboard.Visibility = Visibility.Collapsed;

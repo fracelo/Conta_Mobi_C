@@ -46,6 +46,9 @@ namespace ContaMobi.Data
 
             if (!colunasExistentes.Contains("lancamento_baixa_uuid"))
                 db.Database.ExecuteSqlRaw("ALTER TABLE contas_pr ADD COLUMN lancamento_baixa_uuid TEXT NULL;");
+
+            if (!colunasExistentes.Contains("numerodocumento"))
+                db.Database.ExecuteSqlRaw("ALTER TABLE contas_pr ADD COLUMN numerodocumento TEXT NULL;");
         }
 
         public static ContaPR? ObterContaCompleta(string contasPRUuid)
@@ -83,7 +86,8 @@ namespace ContaMobi.Data
             decimal valorSobra,
             DateTime? dataVencimentoSobra,
             string usuarioUuid,
-            string? categoriaUuid = null)
+            string? categoriaUuid = null,
+            string? numeroDocumento = null)
         {
             GarantirColunasBaixa();
             TransferenciaService.GarantirEstruturaTransferencia(usuarioUuid);
@@ -96,6 +100,13 @@ namespace ContaMobi.Data
                 var conta = db.Set<ContaPR>().FirstOrDefault(c => c.ContasPRUuid == contasPRUuid);
                 if (conta == null)
                     throw new InvalidOperationException("Conta não encontrada no banco de dados.");
+
+                string? docEfetivo = string.IsNullOrWhiteSpace(numeroDocumento)
+                    ? null
+                    : numeroDocumento.Trim();
+
+                if (docEfetivo != null && docEfetivo.Length > 35)
+                    docEfetivo = docEfetivo.Substring(0, 35);
 
                 string tipoLancamento = conta.Tipo == "R" ? "C" : "D";
                 bool estavaQuitado = conta.EstaQuitado;
@@ -152,7 +163,7 @@ namespace ContaMobi.Data
 
                 DateTime dataMov = dataBaixa.Date;
 
-                // 2. Gera o novo lançamento na Conta Corrente selecionada
+                // 2. Gera o novo lançamento na Conta Corrente selecionada levando o Número do Documento
                 string descLancamento = $"{conta.Descricao} ({conta.NumeroParcela:D2}/{conta.TotalParcelas:D2})";
                 if (descLancamento.Length > 150)
                     descLancamento = descLancamento.Substring(0, 150);
@@ -166,6 +177,7 @@ namespace ContaMobi.Data
                     EntidadeUuid = conta.EntidadeUuid,
                     DataLancamento = dataMov,
                     Descricao = descLancamento,
+                    NumeroDocumento = docEfetivo,
                     Tipo = tipoLancamento,
                     Valor = Math.Abs(valorPago),
                     Observacao = $"Baixa automática Contas {(conta.Tipo == "P" ? "a Pagar" : "a Receber")} - Parc. {conta.NumeroParcela:D2}/{conta.TotalParcelas:D2}",
@@ -180,6 +192,7 @@ namespace ContaMobi.Data
                 // 3. Atualiza a parcela com os dados da baixa e vincula o UUID do novo lançamento
                 conta.ContaUuid = contaCorrenteUuid;
                 conta.CategoriaUuid = categoriaEfetiva;
+                conta.NumeroDocumento = docEfetivo;
                 conta.Juro = juro;
                 conta.Multa = multa;
                 conta.Acrescimo = acrescimo;
@@ -206,6 +219,7 @@ namespace ContaMobi.Data
                         CategoriaUuid = categoriaEfetiva,
                         EntidadeUuid = conta.EntidadeUuid,
                         Descricao = descricaoSobra,
+                        NumeroDocumento = docEfetivo,
                         DataLancamento = DateTime.Today,
                         DataVencimento = (dataVencimentoSobra ?? conta.DataVencimento).Date,
                         ValorBase = valorSobra,

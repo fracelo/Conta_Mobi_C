@@ -147,14 +147,24 @@ namespace ContaMobi.Views
             }
 
             string? contaUuid = (CboFiltroConta.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            string filtroDoc = (TxtFiltroDocumento?.Text ?? string.Empty).Trim();
 
             try
             {
                 var resultado = MovimentacaoContaService.ListarLancamentosDoPeriodo(contaUuid, dtIni, dtFim);
+                var listaExibicao = resultado.Lancamentos;
+
+                if (!string.IsNullOrWhiteSpace(filtroDoc))
+                {
+                    listaExibicao = listaExibicao
+                        .Where(l => !string.IsNullOrWhiteSpace(l.NumeroDocumento) &&
+                                    l.NumeroDocumento.Contains(filtroDoc, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
 
                 if (_lancamentosConferidos.Count > 0)
                 {
-                    foreach (var item in resultado.Lancamentos)
+                    foreach (var item in listaExibicao)
                     {
                         if (!string.IsNullOrWhiteSpace(item.LancamentoUuid) &&
                             _lancamentosConferidos.Contains(item.LancamentoUuid))
@@ -164,12 +174,12 @@ namespace ContaMobi.Views
                     }
                 }
 
-                ListaLancamentos.ItemsSource = resultado.Lancamentos;
+                ListaLancamentos.ItemsSource = listaExibicao;
                 TxtSaldoAnterior.Text = $"Saldo Anterior..: {resultado.SaldoAnterior.ToString("C2", _cultura)}";
                 TxtSaldoFinal.Text = $"Saldo Final..: {resultado.SaldoFinal.ToString("C2", _cultura)}";
 
                 TxtResumoPeriodo.Text = $"EXIBINDO MOVIMENTACAO DE {dtIni:dd/MM/yyyy} ATE {dtFim:dd/MM/yyyy}";
-                TxtTotalRegistros.Text = $"REGISTROS: {resultado.Lancamentos.Count}";
+                TxtTotalRegistros.Text = $"REGISTROS: {listaExibicao.Count}";
             }
             catch (Exception ex)
             {
@@ -190,6 +200,14 @@ namespace ContaMobi.Views
             if (this.IsLoaded)
             {
                 AtualizarDatasPorPeriodo();
+                CarregarExtrato();
+            }
+        }
+
+        private void TxtFiltroDocumento_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (this.IsLoaded)
+            {
                 CarregarExtrato();
             }
         }

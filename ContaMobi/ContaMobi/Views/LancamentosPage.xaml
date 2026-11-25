@@ -53,14 +53,15 @@
             </Grid>
         </Border>
 
-        <!-- BARRA DE FILTROS: CONTA E PERÍODO -->
+        <!-- BARRA DE FILTROS: CONTA, PERÍODO E DOCUMENTO -->
         <Border Grid.Row="1" BorderBrush="#004411" BorderThickness="1" Background="#030A03" Padding="10" Margin="0,0,0,8">
             <Grid ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2.2*"/>
-                    <ColumnDefinition Width="1.5*"/>
-                    <ColumnDefinition Width="130"/>
-                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="1.3*"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="1.2*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
@@ -89,12 +90,18 @@
                     <TextBox x:Name="TxtDataFim" MaxLength="10" PlaceholderText="dd/mm/aaaa" Height="32" IsEnabled="False"/>
                 </StackPanel>
 
-                <Button Grid.Column="4" x:Name="BtnFiltrar" Content="[F3] FILTRAR" Click="BtnFiltrar_Click"
+                <StackPanel Grid.Column="4" Spacing="3">
+                    <TextBlock Text="FILTRAR DOCUMENTO:" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                    <TextBox x:Name="TxtFiltroDocumento" MaxLength="35" PlaceholderText="Nr. Doc / NF..." Height="32"
+                             TextChanged="TxtFiltroDocumento_TextChanged"/>
+                </StackPanel>
+
+                <Button Grid.Column="5" x:Name="BtnFiltrar" Content="[F3] FILTRAR" Click="BtnFiltrar_Click"
                         VerticalAlignment="Bottom" Height="32" Width="110"/>
             </Grid>
         </Border>
 
-        <!-- SALDO ANTERIOR (CANTO DIREITO ACIMA DO GRID COM MESMO DESTAQUE DO SALDO FINAL) -->
+        <!-- SALDO ANTERIOR -->
         <Grid Grid.Row="2" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -119,25 +126,27 @@
                     <DataTemplate>
                         <Grid Background="#051A05" Padding="10,8" BorderBrush="#008833" BorderThickness="0,0,0,1" ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.6*"/>
-                                <ColumnDefinition Width="95"/>
-                                <ColumnDefinition Width="2.4*"/>
-                                <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="1.6*"/>
-                                <ColumnDefinition Width="155"/>
-                                <ColumnDefinition Width="85"/>
-                                <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="78"/>
+                                <ColumnDefinition Width="1.4*"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="2.1*"/>
+                                <ColumnDefinition Width="115"/>
+                                <ColumnDefinition Width="46"/>
+                                <ColumnDefinition Width="1.4*"/>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="76"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="DESCRICAO CONTA" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
                             <TextBlock Grid.Column="1" Text="DATA LANC." Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Column="2" Text="DESCRICAO (HISTORICO)" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
-                            <TextBlock Grid.Column="3" Text="TIPO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Text="CATEGORIA" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
-                            <TextBlock Grid.Column="5" Text="VALOR" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
-                            <TextBlock Grid.Column="6" Text="CONCILIADO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="7" Text="SALDO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
-                            <TextBlock Grid.Column="8" Text="ACAO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="DOCUMENTO" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="4" Text="TIPO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="CATEGORIA" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="6" Text="VALOR" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
+                            <TextBlock Grid.Column="7" Text="CONCILIADO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="8" Text="SALDO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
+                            <TextBlock Grid.Column="9" Text="ACAO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.HeaderTemplate>
@@ -146,24 +155,26 @@
                     <DataTemplate x:DataType="models:LancamentoConta">
                         <Grid Padding="10,7" BorderBrush="#00280A" BorderThickness="0,0,0,1" ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.6*"/>
-                                <ColumnDefinition Width="95"/>
-                                <ColumnDefinition Width="2.4*"/>
-                                <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="1.6*"/>
-                                <ColumnDefinition Width="155"/>
-                                <ColumnDefinition Width="85"/>
-                                <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="78"/>
+                                <ColumnDefinition Width="1.4*"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="2.1*"/>
+                                <ColumnDefinition Width="115"/>
+                                <ColumnDefinition Width="46"/>
+                                <ColumnDefinition Width="1.4*"/>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="125"/>
+                                <ColumnDefinition Width="76"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="{x:Bind DescricaoConta}" Foreground="#55CC77" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                             <TextBlock Grid.Column="1" Text="{x:Bind DataLancamentoFormatada}" Foreground="#00FF66" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2" Text="{x:Bind Descricao}" Foreground="#00FF66" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="3" Text="{x:Bind Tipo}" Foreground="{x:Bind ValorCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Text="{x:Bind NomeCategoria}" Foreground="#00AA44" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="3" Text="{x:Bind NumeroDocumentoFormatado}" Foreground="#88CC99" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind NumeroDocumentoFormatado}"/>
+                            <TextBlock Grid.Column="4" Text="{x:Bind Tipo}" Foreground="{x:Bind ValorCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="{x:Bind NomeCategoria}" Foreground="#00AA44" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
 
                             <!-- CHECKBOX DE CONFERÊNCIA VISUAL + VALOR -->
-                            <Grid Grid.Column="5" VerticalAlignment="Center">
+                            <Grid Grid.Column="6" VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
@@ -185,9 +196,9 @@
                                            VerticalAlignment="Center"/>
                             </Grid>
 
-                            <TextBlock Grid.Column="6" Text="{x:Bind ConciliadoSN}" Foreground="{x:Bind ConciliadoCor}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="7" Text="{x:Bind SaldoAposFormatado}" Foreground="{x:Bind SaldoAposCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                            <Button Grid.Column="8"
+                            <TextBlock Grid.Column="7" Text="{x:Bind ConciliadoSN}" Foreground="{x:Bind ConciliadoCor}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="8" Text="{x:Bind SaldoAposFormatado}" Foreground="{x:Bind SaldoAposCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <Button Grid.Column="9"
                                     Content="EDITAR"
                                     Tag="{x:Bind}"
                                     Click="BtnEditarLinha_Click"

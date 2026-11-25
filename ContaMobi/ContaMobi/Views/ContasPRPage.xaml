@@ -15,7 +15,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- CABEÇALHO DINÂMICO (CONTAS A PAGAR OU CONTAS A RECEBER) -->
+        <!-- CABEÇALHO DINÂMICO -->
         <Border Grid.Row="0" BorderBrush="#00FF66" BorderThickness="1" Background="#051005" Padding="12" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -82,7 +82,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="5" Spacing="3">
-                    <TextBlock Text="BUSCAR (DESCRICAO / ENTIDADE):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                    <TextBlock Text="BUSCAR (DESCRICAO / DOC / ENTIDADE):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
                     <TextBox x:Name="TxtBusca" PlaceholderText="Digite para filtrar..." Height="32" TextChanged="TxtBusca_TextChanged"/>
                 </StackPanel>
 
@@ -91,7 +91,7 @@
             </Grid>
         </Border>
 
-        <!-- GRID DE TÍTULOS (DUPLO CLIQUE PARA EDITAR / BOTÃO BAIXAR PARA QUITAR OU EDITAR BAIXA) -->
+        <!-- GRID DE TÍTULOS -->
         <Border Grid.Row="2" BorderBrush="#004411" BorderThickness="1" Background="#020802">
             <ListView x:Name="ListaContasPR" SelectionMode="Single"
                       DoubleTapped="ListaContasPR_DoubleTapped"
@@ -100,29 +100,31 @@
                     <DataTemplate>
                         <Grid Background="#051A05" Padding="10,8" BorderBrush="#008833" BorderThickness="0,0,0,1" ColumnSpacing="6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="85"/>
-                                <ColumnDefinition Width="55"/>
-                                <ColumnDefinition Width="2*"/>
-                                <ColumnDefinition Width="1.4*"/>
-                                <ColumnDefinition Width="1.2*"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="95"/>
-                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="82"/>
-                                <ColumnDefinition Width="78"/>
-                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="52"/>
+                                <ColumnDefinition Width="1.8*"/>
+                                <ColumnDefinition Width="105"/>
+                                <ColumnDefinition Width="1.3*"/>
+                                <ColumnDefinition Width="1.1*"/>
+                                <ColumnDefinition Width="95"/>
+                                <ColumnDefinition Width="88"/>
+                                <ColumnDefinition Width="95"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="74"/>
+                                <ColumnDefinition Width="136"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="VENCIMENTO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="PARC." Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Column="2" Text="DESCRICAO" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
-                            <TextBlock Grid.Column="3" Text="ENTIDADE" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
-                            <TextBlock Grid.Column="4" Text="CATEGORIA" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
-                            <TextBlock Grid.Column="5" Text="VALOR" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
-                            <TextBlock Grid.Column="6" Text="ENCARGOS" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
-                            <TextBlock Grid.Column="7" Text="VALOR PAGO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
-                            <TextBlock Grid.Column="8" Text="DATA PAGTO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="9" Text="STATUS" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="10" Text="ACOES" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="DOCUMENTO" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="4" Text="ENTIDADE" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="5" Text="CATEGORIA" Foreground="#00FF66" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Grid.Column="6" Text="VALOR" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
+                            <TextBlock Grid.Column="7" Text="ENCARGOS" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
+                            <TextBlock Grid.Column="8" Text="VALOR PAGO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Right"/>
+                            <TextBlock Grid.Column="9" Text="DATA PAGTO" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="10" Text="STATUS" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="11" Text="ACOES" Foreground="#00FF66" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.HeaderTemplate>
@@ -131,30 +133,32 @@
                     <DataTemplate x:DataType="models:ContaPR">
                         <Grid Padding="10,7" BorderBrush="#00280A" BorderThickness="0,0,0,1" ColumnSpacing="6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="85"/>
-                                <ColumnDefinition Width="55"/>
-                                <ColumnDefinition Width="2*"/>
-                                <ColumnDefinition Width="1.4*"/>
-                                <ColumnDefinition Width="1.2*"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="95"/>
-                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="82"/>
-                                <ColumnDefinition Width="78"/>
-                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="52"/>
+                                <ColumnDefinition Width="1.8*"/>
+                                <ColumnDefinition Width="105"/>
+                                <ColumnDefinition Width="1.3*"/>
+                                <ColumnDefinition Width="1.1*"/>
+                                <ColumnDefinition Width="95"/>
+                                <ColumnDefinition Width="88"/>
+                                <ColumnDefinition Width="95"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="74"/>
+                                <ColumnDefinition Width="136"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="{x:Bind DataVencimentoFormatada}" Foreground="#00FF66" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{x:Bind ParcelaFormatada}" Foreground="#3399FF" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2" Text="{x:Bind Descricao}" Foreground="#00FF66" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="3" Text="{x:Bind NomeEntidade}" Foreground="#55CC77" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="4" Text="{x:Bind NomeCategoria}" Foreground="#00AA44" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="5" Text="{x:Bind ValorFormatado}" Foreground="{x:Bind ValorCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="6" Text="{x:Bind EncargosFormatado}" Foreground="#FFAA00" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="7" Text="{x:Bind ValorPagoFormatado}" Foreground="#00FF66" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="8" Text="{x:Bind DataPagamentoFormatada}" Foreground="#00AA44" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="9" Text="{x:Bind StatusTexto}" Foreground="{x:Bind StatusCor}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="{x:Bind NumeroDocumentoFormatado}" Foreground="#88CC99" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind NumeroDocumentoFormatado}"/>
+                            <TextBlock Grid.Column="4" Text="{x:Bind NomeEntidade}" Foreground="#55CC77" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="5" Text="{x:Bind NomeCategoria}" Foreground="#00AA44" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="6" Text="{x:Bind ValorFormatado}" Foreground="{x:Bind ValorCor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="7" Text="{x:Bind EncargosFormatado}" Foreground="#FFAA00" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="8" Text="{x:Bind ValorPagoFormatado}" Foreground="#00FF66" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="9" Text="{x:Bind DataPagamentoFormatada}" Foreground="#00AA44" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="10" Text="{x:Bind StatusTexto}" Foreground="{x:Bind StatusCor}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
-                            <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="11" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Button
                                     Content="EDITAR"
                                     Tag="{x:Bind}"
