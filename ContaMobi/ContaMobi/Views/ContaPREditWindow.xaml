@@ -51,7 +51,7 @@
                     </Grid>
                 </Border>
 
-                <!-- LINHA 2: CATEGORIA (COMBO) + ENTIDADE + DESCRIÇÃO -->
+                <!-- LINHA 2: CATEGORIA (COMBO) + ENTIDADE + DESCRIÇÃO + NÚMERO DOCUMENTO -->
                 <Border Grid.Row="3" BorderBrush="#005522" BorderThickness="1" Background="#020802" Padding="10,8">
                     <StackPanel Spacing="8">
                         <Grid ColumnSpacing="12">
@@ -100,10 +100,17 @@
                             <TextBlock Text="DESCRICAO / HISTORICO DA CONTA (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
                             <TextBox x:Name="TxtDescricao" PlaceholderText="Ex: Salario, Fatura Energia, Compra Fornecedor..." Height="34"/>
                         </StackPanel>
+
+                        <!-- NÚMERO DO DOCUMENTO (OPCIONAL) -->
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="NUMERO DO DOCUMENTO (OPCIONAL):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                            <TextBox x:Name="TxtNumeroDocumento" MaxLength="35"
+                                     PlaceholderText="Ex: NF 12345, BOLETO 001, DUPLICATA 10/1..." Height="34"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
-                <!-- LINHA 3: VALOR + OPÇÕES DE PARCELAMENTO (MODO, Nº PARCELAS >= 1, INTERVALO EM DIAS) -->
+                <!-- LINHA 3: VALOR + OPÇÕES DE PARCELAMENTO -->
                 <Border Grid.Row="4" BorderBrush="#008833" BorderThickness="1" Background="#041204" Padding="10,8">
                     <Grid ColumnSpacing="10">
                         <Grid.ColumnDefinitions>

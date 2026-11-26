@@ -882,12 +882,58 @@ namespace ContaMobi.Views
             }
         }
 
-        private void BtnExcluir_Click(object sender, RoutedEventArgs e)
+        private async void BtnExcluir_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                ContasPRService.ExcluirContaPR(_contaPR.ContasPRUuid);
-                this.Close();
+                var futuras = ContasPRService.ObterParcelasFuturasRelacionadas(_contaPR.ContasPRUuid);
+                string avisoQuitado = _contaPR.EstaQuitado
+                    ? "\n\n[!] Esta parcela já está baixada: o lançamento correspondente na Conta Corrente também será estornado."
+                    : string.Empty;
+
+                if (futuras.Count > 0)
+                {
+                    var dialog = new ContentDialog
+                    {
+                        Title = "Excluir parcela vinculada",
+                        Content = $"Esta conta ({_contaPR.ParcelaFormatada}) possui {futuras.Count} parcela(s) futura(s) relacionada(s).\n\n" +
+                                  "O que deseja apagar?\n" +
+                                  "• Somente esta: apaga apenas a parcela atual.\n" +
+                                  $"• Esta e as futuras ({1 + futuras.Count} no total): apaga esta e todas as parcelas seguintes.{avisoQuitado}",
+                        PrimaryButtonText = "Somente esta",
+                        SecondaryButtonText = $"Esta e as {futuras.Count} futuras",
+                        CloseButtonText = "Cancelar",
+                        DefaultButton = ContentDialogButton.Close,
+                        XamlRoot = this.Content.XamlRoot
+                    };
+
+                    var resultado = await dialog.ShowAsync();
+                    if (resultado == ContentDialogResult.None)
+                        return;
+
+                    bool excluirTodasFuturas = resultado == ContentDialogResult.Secondary;
+                    ContasPRService.ExcluirContaPR(_contaPR.ContasPRUuid, excluirTodasFuturas);
+                    this.Close();
+                }
+                else
+                {
+                    var dialog = new ContentDialog
+                    {
+                        Title = "Confirmar exclusão",
+                        Content = $"Deseja realmente apagar a conta \"{_contaPR.Descricao}\" ({_contaPR.ParcelaFormatada})?{avisoQuitado}",
+                        PrimaryButtonText = "Sim, apagar",
+                        CloseButtonText = "Cancelar",
+                        DefaultButton = ContentDialogButton.Close,
+                        XamlRoot = this.Content.XamlRoot
+                    };
+
+                    var resultado = await dialog.ShowAsync();
+                    if (resultado != ContentDialogResult.Primary)
+                        return;
+
+                    ContasPRService.ExcluirContaPR(_contaPR.ContasPRUuid, excluirFuturas: false);
+                    this.Close();
+                }
             }
             catch (Exception ex)
             {

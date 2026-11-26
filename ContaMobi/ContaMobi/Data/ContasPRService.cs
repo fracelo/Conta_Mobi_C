@@ -409,24 +409,138 @@ namespace ContaMobi.Data
             return texto;
         }
 
-        public static void ExcluirContaPR(string contasPRUuid)
+        /// <summary>
+        /// Retorna todas as parcelas futuras pertencentes ao mesmo lote (LoteUuid) da conta informada.
+        /// </summary>
+        public static List<ContaPR> ObterParcelasFuturasRelacionadas(string contasPRUuid)
         {
             GarantirTabelasCriadas();
 
             using var db = new AppDbContext();
-            var parcelasGrid = db.ContasPRParcelas.Where(p => p.ContasPRUuid == contasPRUuid).ToList();
-            if (parcelasGrid.Count > 0)
-            {
-                db.ContasPRParcelas.RemoveRange(parcelasGrid);
-            }
+            var atual = db.ContasPR
+                .AsNoTracking()
+                .FirstOrDefault(c => c.ContasPRUuid == contasPRUuid);
 
-            var existente = db.ContasPR.Find(contasPRUuid);
-            if (existente != null)
-            {
-                db.ContasPR.Remove(existente);
-            }
+            if (atual == null || string.IsNullOrWhiteSpace(atual.LoteUuid))
+                return new List<ContaPR>();
 
-            db.SaveChanges();
+            return db.ContasPR
+                .AsNoTracking()
+                .Where(c => c.LoteUuid == atual.LoteUuid &&
+                            c.ContasPRUuid != atual.ContasPRUuid &&
+                            (c.NumeroParcela > atual.NumeroParcela ||
+                             (c.NumeroParcela == atual.NumeroParcela && c.DataVencimento > atual.DataVencimento)))
+                .OrderBy(c => c.NumeroParcela)
+                .ThenBy(c => c.DataVencimento)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Exclui a conta selecionada e, opcionalmente, todas as parcelas futuras relacionadas do mesmo lote.
+        /// Caso alguma parcela excluída já esteja baixada, estorna também o lançamento na Conta Corrente.
+        /// </summary>
+        public static void ExcluirContaPR(string contasPRUuid, bool excluirFuturas = false)
+        {
+            GarantirTabelasCriadas();
+            ContasPRBaixaService.GarantirColunasBaixa();
+
+            using var db = new AppDbContext();
+            using var trans = db.Database.BeginTransaction();
+
+            try
+            {
+                var alvo = db.ContasPR.FirstOrDefault(c => c.ContasPRUuid == contasPRUuid);
+                if (alvo == null)
+                    return;
+
+                var contasParaExcluir = new List<ContaPR> { alvo };
+
+                if (excluirFuturas && !string.IsNullOrWhiteSpace(alvo.LoteUuid))
+                {
+                    var futuras = db.ContasPR
+                        .Where(c => c.LoteUuid == alvo.LoteUuid &&
+                                    c.ContasPRUuid != alvo.ContasPRUuid &&
+                                    (c.NumeroParcela > alvo.NumeroParcela ||
+                                     (c.NumeroParcela == alvo.NumeroParcela && c.DataVencimento > alvo.DataVencimento)))
+                        .ToList();
+
+                    contasParaExcluir.AddRange(futuras);
+                }
+
+                var uuidsExcluir = contasParaExcluir.Select(c => c.ContasPRUuid).ToList();
+
+                var parcelasGrid = db.ContasPRParcelas
+                    .Where(p => uuidsExcluir.Contains(p.ContasPRUuid))
+                    .ToList();
+
+                if (parcelasGrid.Count > 0)
+                {
+                    db.ContasPRParcelas.RemoveRange(parcelasGrid);
+                }
+
+                var contasAfetadas = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var c in contasParaExcluir)
+                {
+                    if (!c.EstaQuitado)
+                        continue;
+
+                    LancamentoConta? lancVinculado = null;
+
+                    if (!string.IsNullOrWhiteSpace(c.LancamentoBaixaUuid))
+                    {
+                        lancVinculado = db.LancamentosConta
+                            .FirstOrDefault(l => l.LancamentoUuid == c.LancamentoBaixaUuid);
+                    }
+
+                    if (lancVinculado == null && c.DataPagamento.HasValue && !string.IsNullOrWhiteSpace(c.ContaUuid))
+                    {
+                        string tipoLanc = c.Tipo == "R" ? "C" : "D";
+                        DateTime dtPag = c.DataPagamento.Value.Date;
+                        decimal valPago = Math.Abs(c.ValorPago);
+
+                        lancVinculado = db.LancamentosConta
+                            .Where(l => l.ContaUuid == c.ContaUuid &&
+                                        l.DataLancamento == dtPag &&
+                                        l.Tipo == tipoLanc &&
+                                        l.CategoriaUuid == c.CategoriaUuid &&
+                                        l.Valor == valPago)
+                            .OrderByDescending(l => l.CriadoEm)
+                            .FirstOrDefault();
+                    }
+
+                    if (lancVinculado != null)
+                    {
+                        string cUuid = lancVinculado.ContaUuid;
+                        DateTime dtMov = lancVinculado.DataLancamento.Date;
+
+                        if (!contasAfetadas.TryGetValue(cUuid, out DateTime dtMin) || dtMov < dtMin)
+                            contasAfetadas[cUuid] = dtMov;
+
+                        db.LancamentosConta.Remove(lancVinculado);
+                    }
+                }
+
+                db.ContasPR.RemoveRange(contasParaExcluir);
+                db.SaveChanges();
+
+                foreach (var kvp in contasAfetadas)
+                {
+                    TransferenciaService.RecalcularSaldosDiariosConta(db, kvp.Key, kvp.Value);
+                }
+
+                if (contasAfetadas.Count > 0)
+                {
+                    db.SaveChanges();
+                }
+
+                trans.Commit();
+            }
+            catch
+            {
+                trans.Rollback();
+                throw;
+            }
         }
     }
 }

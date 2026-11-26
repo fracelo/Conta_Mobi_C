@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Windows.System;
 
 namespace ContaMobi.Views
@@ -245,6 +246,14 @@ namespace ContaMobi.Views
             }
         }
 
+        private async void BtnExcluirLinha_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is ContaPR conta)
+            {
+                await ConfirmarEExcluirContaPRAsync(conta);
+            }
+        }
+
         private void ListaContasPR_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             if (ListaContasPR.SelectedItem is ContaPR selecionado)
@@ -253,7 +262,7 @@ namespace ContaMobi.Views
             }
         }
 
-        private void ListaContasPR_KeyDown(object sender, KeyRoutedEventArgs e)
+        private async void ListaContasPR_KeyDown(object sender, KeyRoutedEventArgs e)
         {
             if (e.Key == VirtualKey.F2)
             {
@@ -267,9 +276,72 @@ namespace ContaMobi.Views
             }
             else if (e.Key == VirtualKey.Delete && ListaContasPR.SelectedItem is ContaPR selecionadoExcluir)
             {
-                ContasPRService.ExcluirContaPR(selecionadoExcluir.ContasPRUuid);
-                CarregarTitulos();
                 e.Handled = true;
+                await ConfirmarEExcluirContaPRAsync(selecionadoExcluir);
+            }
+        }
+
+        private async Task ConfirmarEExcluirContaPRAsync(ContaPR conta)
+        {
+            try
+            {
+                var futuras = ContasPRService.ObterParcelasFuturasRelacionadas(conta.ContasPRUuid);
+                string avisoQuitado = conta.EstaQuitado
+                    ? "\n\n[!] Esta parcela já está baixada: o lançamento correspondente na Conta Corrente também será estornado."
+                    : string.Empty;
+
+                if (futuras.Count > 0)
+                {
+                    int quitadasFuturas = futuras.Count(f => f.EstaQuitado);
+                    string avisoQuitadasFuturas = quitadasFuturas > 0
+                        ? $"\n[!] Atenção: {quitadasFuturas} parcela(s) futura(s) já está(ão) baixada(s) e também terão seus lançamentos estornados."
+                        : string.Empty;
+
+                    var dialog = new ContentDialog
+                    {
+                        Title = "Excluir parcela vinculada",
+                        Content = $"A conta \"{conta.Descricao}\" ({conta.ParcelaFormatada} - Venc. {conta.DataVencimentoFormatada}) possui {futuras.Count} parcela(s) futura(s) relacionada(s).\n\n" +
+                                  "O que deseja apagar?\n" +
+                                  "• Somente esta: apaga apenas a parcela selecionada.\n" +
+                                  $"• Esta e as futuras ({1 + futuras.Count} no total): apaga a parcela selecionada e todas as parcelas seguintes.{avisoQuitado}{avisoQuitadasFuturas}",
+                        PrimaryButtonText = "Somente esta",
+                        SecondaryButtonText = $"Esta e as {futuras.Count} futuras",
+                        CloseButtonText = "Cancelar",
+                        DefaultButton = ContentDialogButton.Close,
+                        XamlRoot = this.XamlRoot
+                    };
+
+                    var resultado = await dialog.ShowAsync();
+                    if (resultado == ContentDialogResult.None)
+                        return;
+
+                    bool excluirTodasFuturas = resultado == ContentDialogResult.Secondary;
+                    ContasPRService.ExcluirContaPR(conta.ContasPRUuid, excluirTodasFuturas);
+                    CarregarTitulos();
+                }
+                else
+                {
+                    var dialog = new ContentDialog
+                    {
+                        Title = "Confirmar exclusão",
+                        Content = $"Deseja realmente apagar a conta \"{conta.Descricao}\" (Parc. {conta.ParcelaFormatada} - Venc. {conta.DataVencimentoFormatada} - {conta.ValorFormatado})?{avisoQuitado}",
+                        PrimaryButtonText = "Sim, apagar",
+                        CloseButtonText = "Cancelar",
+                        DefaultButton = ContentDialogButton.Close,
+                        XamlRoot = this.XamlRoot
+                    };
+
+                    var resultado = await dialog.ShowAsync();
+                    if (resultado != ContentDialogResult.Primary)
+                        return;
+
+                    ContasPRService.ExcluirContaPR(conta.ContasPRUuid, excluirFuturas: false);
+                    CarregarTitulos();
+                }
+            }
+            catch (Exception ex)
+            {
+                TxtTotalRegistros.Text = $"ERRO AO EXCLUIR: {ex.Message}";
             }
         }
 
