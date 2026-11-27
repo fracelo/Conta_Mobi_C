@@ -10,6 +10,64 @@ namespace ContaMobi.Data
     public static class DashboardGraficosService
     {
         /// <summary>
+        /// Agrupa títulos em aberto de Contas a Receber ("R") ou Contas a Pagar ("P") por Categoria Nível 1,
+        /// anexando os valores de Nível 2 para o gráfico de detalhamento ao clicar.
+        /// </summary>
+        public static List<CategoriaNivel1Grafico> ObterContasPRPorCategoria(
+            string tipo, DateTime? dataInicio = null, DateTime? dataFim = null)
+        {
+            ContasPRService.GarantirTabelasCriadas();
+            ContasPRBaixaService.GarantirColunasBaixa();
+
+            using var db = new AppDbContext();
+
+            string tipoAlvo = (tipo ?? "P").Trim().ToUpperInvariant();
+            var categoriasMap = CarregarMapaCategorias(db);
+
+            var query = db.Set<ContaPR>()
+                .AsNoTracking()
+                .Where(c => c.Tipo == tipoAlvo &&
+                            c.DataPagamento == null &&
+                            !string.IsNullOrEmpty(c.CategoriaUuid));
+
+            if (dataInicio.HasValue)
+            {
+                DateTime dtIni = dataInicio.Value.Date;
+                query = query.Where(c => c.DataVencimento >= dtIni);
+            }
+
+            if (dataFim.HasValue)
+            {
+                DateTime dtFimBase = dataFim.Value.Date;
+                DateTime dtFimLimite = dtFimBase < DateTime.MaxValue.Date
+                    ? dtFimBase.AddDays(1).AddTicks(-1)
+                    : DateTime.MaxValue;
+
+                query = query.Where(c => c.DataVencimento <= dtFimLimite);
+            }
+
+            var itensBrutos = query
+                .Select(c => new
+                {
+                    c.CategoriaUuid,
+                    c.Valor,
+                    c.Multa,
+                    c.Juro,
+                    c.Acrescimo,
+                    c.Desconto,
+                    c.ValorPago
+                })
+                .ToList()
+                .Where(c => c.ValorPago <= 0m)
+                .Select(c => (
+                    CategoriaUuid: c.CategoriaUuid,
+                    Valor: Math.Max(0m, c.Valor + c.Multa + c.Juro + c.Acrescimo - c.Desconto)
+                ));
+
+            return AgruparPorNivel1(categoriasMap, itensBrutos);
+        }
+
+        /// <summary>
         /// Agrupa lançamentos em conta corrente (Entradas = "C" ou Saídas = "D") por Categoria Nível 1,
         /// anexando os valores de Nível 2 para o gráfico de detalhamento ao clicar.
         /// </summary>
@@ -20,7 +78,10 @@ namespace ContaMobi.Data
             using var db = new AppDbContext();
 
             DateTime dtIni = dataInicio.Date;
-            DateTime dtFim = dataFim.Date.AddDays(1).AddTicks(-1);
+            DateTime dtFimBase = dataFim.Date;
+            DateTime dtFim = dtFimBase < DateTime.MaxValue.Date
+                ? dtFimBase.AddDays(1).AddTicks(-1)
+                : DateTime.MaxValue;
 
             var categoriasMap = CarregarMapaCategorias(db);
 

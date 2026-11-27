@@ -33,7 +33,6 @@ namespace ContaMobi
 
             this.Closed += (s, e) => Environment.Exit(0);
 
-            // Captura erros de navegação caso o XAML da página falhe
             MainContentFrame.NavigationFailed += (s, e) =>
             {
                 System.Diagnostics.Debug.WriteLine($"[ERRO NAVEGACAO FRAME]: {e.Exception?.Message}");
@@ -46,12 +45,12 @@ namespace ContaMobi
 
             TxtDataSistema.Text = $"DATA: {DateTime.Now:dd/MM/yyyy}";
 
+            AtualizarDatasFiltroContasPR();
             AtualizarDatasFiltroGraficos();
             _telaInicializada = true;
 
             CarregarResumoInicial();
 
-            // Sincroniza a tabela de bancos do Supabase em segundo plano se o SQLite estiver vazio
             _ = ContaMobi.Services.BancoSyncService.SincronizarBancosSeVazioAsync();
         }
 
@@ -117,26 +116,179 @@ namespace ContaMobi
                             $"Real: {saldoRealMes.ToString("C2", _cultura)}";
                     }
                 }
-
-                // 3. Atualiza os totais de Receitas/Despesas do período e todos os gráficos do Dashboard
-                CarregarGraficosMovimentacao();
-                CarregarGraficosOrcamentoAno();
-                CarregarGraficoSaldoContas();
             }
             catch (Exception ex)
             {
                 TxtStatusBanco.Text = $"> [ALERTA] Erro ao ler banco local: {ex.Message}";
                 if (TxtSaldoTotal != null) TxtSaldoTotal.Text = "R$ 0,00";
-                if (TxtReceitasMes != null) TxtReceitasMes.Text = "R$ 0,00";
-                if (TxtDespesasMes != null) TxtDespesasMes.Text = "R$ 0,00";
                 if (TxtOrcamentoMesResumo != null)
                 {
                     TxtOrcamentoMesResumo.Text = "Plan: R$ 0,00\nReal: R$ 0,00";
                 }
             }
+
+            // 3. Carrega cada bloco de gráficos na nova ordem definida
+            CarregarGraficoSaldoContas();
+            CarregarGraficosContasPR();
+            CarregarGraficosMovimentacao();
+            CarregarGraficosOrcamentoAno();
         }
 
-        #region Gráficos Pizza do Dashboard
+        #region Bloco 1: Saldo por Conta Corrente
+
+        private void CarregarGraficoSaldoContas()
+        {
+            if (GraficoSaldoContas == null)
+                return;
+
+            try
+            {
+                var saldosContas = DashboardGraficosService.ObterSaldoPorContaCorrente();
+
+                GraficoSaldoContas.ConfigurarHierarquico(
+                    "SALDO POR CONTA CORRENTE",
+                    Color.FromArgb(255, 0, 255, 102),
+                    saldosContas);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERRO GRAFICO SALDO CONTAS]: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Bloco 2: Contas a Receber e a Pagar em Aberto (Hierárquico)
+
+        private void AtualizarDatasFiltroContasPR()
+        {
+            if (CboPeriodoContasPR == null || TxtDataIniContasPR == null || TxtDataFimContasPR == null)
+                return;
+
+            string tag = (CboPeriodoContasPR.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "TODOS";
+            DateTime hoje = DateTime.Today;
+
+            _formatandoDataGrafico = true;
+
+            if (tag == "TODOS")
+            {
+                TxtDataIniContasPR.IsEnabled = false;
+                TxtDataFimContasPR.IsEnabled = false;
+                TxtDataIniContasPR.Text = string.Empty;
+                TxtDataFimContasPR.Text = string.Empty;
+            }
+            else if (tag == "MES_ATUAL")
+            {
+                DateTime ini = new DateTime(hoje.Year, hoje.Month, 1);
+                DateTime fim = ini.AddMonths(1).AddDays(-1);
+                TxtDataIniContasPR.IsEnabled = false;
+                TxtDataFimContasPR.IsEnabled = false;
+                TxtDataIniContasPR.Text = ini.ToString("dd/MM/yyyy");
+                TxtDataFimContasPR.Text = fim.ToString("dd/MM/yyyy");
+            }
+            else if (tag == "PROX_30")
+            {
+                TxtDataIniContasPR.IsEnabled = false;
+                TxtDataFimContasPR.IsEnabled = false;
+                TxtDataIniContasPR.Text = hoje.ToString("dd/MM/yyyy");
+                TxtDataFimContasPR.Text = hoje.AddDays(30).ToString("dd/MM/yyyy");
+            }
+            else if (tag == "VENCIDOS")
+            {
+                TxtDataIniContasPR.IsEnabled = false;
+                TxtDataFimContasPR.IsEnabled = false;
+                TxtDataIniContasPR.Text = string.Empty;
+                TxtDataFimContasPR.Text = hoje.AddDays(-1).ToString("dd/MM/yyyy");
+            }
+            else
+            {
+                TxtDataIniContasPR.IsEnabled = true;
+                TxtDataFimContasPR.IsEnabled = true;
+                if (string.IsNullOrWhiteSpace(TxtDataIniContasPR.Text))
+                    TxtDataIniContasPR.Text = new DateTime(hoje.Year, hoje.Month, 1).ToString("dd/MM/yyyy");
+                if (string.IsNullOrWhiteSpace(TxtDataFimContasPR.Text))
+                    TxtDataFimContasPR.Text = new DateTime(hoje.Year, hoje.Month, 1).AddMonths(1).AddDays(-1).ToString("dd/MM/yyyy");
+            }
+
+            _formatandoDataGrafico = false;
+        }
+
+        private void CarregarGraficosContasPR()
+        {
+            if (GraficoContasReceber == null || GraficoContasPagar == null)
+                return;
+
+            try
+            {
+                string tag = (CboPeriodoContasPR.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "TODOS";
+                DateTime? dtIni = null;
+                DateTime? dtFim = null;
+
+                if (tag == "MES_ATUAL" || tag == "PROX_30" || tag == "PERSONALIZADO")
+                {
+                    if (DateTime.TryParseExact(TxtDataIniContasPR.Text.Trim(), "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime parsedIni))
+                        dtIni = parsedIni;
+
+                    if (DateTime.TryParseExact(TxtDataFimContasPR.Text.Trim(), "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime parsedFim))
+                        dtFim = parsedFim;
+
+                    if (dtIni.HasValue && dtFim.HasValue && dtFim.Value < dtIni.Value)
+                        dtFim = dtIni;
+                }
+                else if (tag == "VENCIDOS")
+                {
+                    dtFim = DateTime.Today.AddDays(-1);
+                }
+
+                TxtPeriodoContasPRInfo.Text = tag switch
+                {
+                    "MES_ATUAL" => $"Títulos em aberto de {TxtDataIniContasPR.Text} até {TxtDataFimContasPR.Text} (clique na fatia pai para ver os filhos)",
+                    "PROX_30" => $"Títulos em aberto nos próximos 30 dias ({TxtDataIniContasPR.Text} a {TxtDataFimContasPR.Text})",
+                    "VENCIDOS" => $"Títulos vencidos até {TxtDataFimContasPR.Text} ainda em aberto",
+                    "PERSONALIZADO" => $"Títulos em aberto de {TxtDataIniContasPR.Text} até {TxtDataFimContasPR.Text}",
+                    _ => "Todos os títulos em aberto (clique na fatia pai para ver os filhos)"
+                };
+
+                var contasReceber = DashboardGraficosService.ObterContasPRPorCategoria("R", dtIni, dtFim);
+                var contasPagar = DashboardGraficosService.ObterContasPRPorCategoria("P", dtIni, dtFim);
+
+                GraficoContasReceber.ConfigurarHierarquico(
+                    "CONTAS A RECEBER (EM ABERTO)",
+                    Color.FromArgb(255, 51, 153, 255),
+                    contasReceber);
+
+                GraficoContasPagar.ConfigurarHierarquico(
+                    "CONTAS A PAGAR (EM ABERTO)",
+                    Color.FromArgb(255, 255, 85, 85),
+                    contasPagar);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERRO GRAFICO CONTAS PR]: {ex.Message}");
+            }
+        }
+
+        private void CboPeriodoContasPR_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_telaInicializada) return;
+
+            AtualizarDatasFiltroContasPR();
+
+            string tag = (CboPeriodoContasPR.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "TODOS";
+            if (tag != "PERSONALIZADO")
+            {
+                CarregarGraficosContasPR();
+            }
+        }
+
+        private void BtnFiltrarContasPR_Click(object sender, RoutedEventArgs e)
+        {
+            CarregarGraficosContasPR();
+        }
+
+        #endregion
+
+        #region Bloco 3: Movimentações em Conta Corrente (Entradas e Saídas)
 
         private void AtualizarDatasFiltroGraficos()
         {
@@ -185,96 +337,51 @@ namespace ContaMobi
             if (GraficoEntradas == null || GraficoSaidas == null)
                 return;
 
-            if (!DateTime.TryParseExact(TxtDataIniGrafico.Text.Trim(), "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime dtIni))
-                dtIni = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-
-            if (!DateTime.TryParseExact(TxtDataFimGrafico.Text.Trim(), "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime dtFim))
-                dtFim = dtIni.AddMonths(1).AddDays(-1);
-
-            if (dtFim < dtIni)
-                dtFim = dtIni;
-
-            TxtPeriodoGraficoInfo.Text = $"Exibindo lançamentos de {dtIni:dd/MM/yyyy} até {dtFim:dd/MM/yyyy}";
-
-            var entradas = DashboardGraficosService.ObterMovimentacaoPorCategoria("C", dtIni, dtFim);
-            var saidas = DashboardGraficosService.ObterMovimentacaoPorCategoria("D", dtIni, dtFim);
-
-            // Atualiza os cards de Receitas e Despesas do período selecionado
-            decimal totalReceitasPeriodo = entradas.Sum(e => e.ValorTotal);
-            decimal totalDespesasPeriodo = saidas.Sum(s => s.ValorTotal);
-
-            if (TxtReceitasMes != null)
+            try
             {
-                TxtReceitasMes.Text = totalReceitasPeriodo.ToString("C2", _cultura);
-                TxtReceitasMes.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 255, 102));
-            }
+                if (!DateTime.TryParseExact(TxtDataIniGrafico.Text.Trim(), "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime dtIni))
+                    dtIni = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-            if (TxtDespesasMes != null)
+                if (!DateTime.TryParseExact(TxtDataFimGrafico.Text.Trim(), "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime dtFim))
+                    dtFim = dtIni.AddMonths(1).AddDays(-1);
+
+                if (dtFim < dtIni)
+                    dtFim = dtIni;
+
+                TxtPeriodoGraficoInfo.Text = $"Exibindo lançamentos de {dtIni:dd/MM/yyyy} até {dtFim:dd/MM/yyyy}";
+
+                var entradas = DashboardGraficosService.ObterMovimentacaoPorCategoria("C", dtIni, dtFim);
+                var saidas = DashboardGraficosService.ObterMovimentacaoPorCategoria("D", dtIni, dtFim);
+
+                decimal totalReceitasPeriodo = entradas.Sum(e => e.ValorTotal);
+                decimal totalDespesasPeriodo = saidas.Sum(s => s.ValorTotal);
+
+                if (TxtReceitasMes != null)
+                {
+                    TxtReceitasMes.Text = totalReceitasPeriodo.ToString("C2", _cultura);
+                    TxtReceitasMes.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 255, 102));
+                }
+
+                if (TxtDespesasMes != null)
+                {
+                    TxtDespesasMes.Text = totalDespesasPeriodo.ToString("C2", _cultura);
+                    TxtDespesasMes.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 85, 85));
+                }
+
+                GraficoEntradas.ConfigurarHierarquico(
+                    "ENTRADAS (RECEITAS)",
+                    Color.FromArgb(255, 51, 153, 255),
+                    entradas);
+
+                GraficoSaidas.ConfigurarHierarquico(
+                    "SAÍDAS (DESPESAS)",
+                    Color.FromArgb(255, 255, 85, 85),
+                    saidas);
+            }
+            catch (Exception ex)
             {
-                TxtDespesasMes.Text = totalDespesasPeriodo.ToString("C2", _cultura);
-                TxtDespesasMes.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 85, 85));
+                System.Diagnostics.Debug.WriteLine($"[ERRO GRAFICOS MOVIMENTACAO]: {ex.Message}");
             }
-
-            GraficoEntradas.ConfigurarHierarquico(
-                "ENTRADAS (RECEITAS)",
-                Color.FromArgb(255, 51, 153, 255),
-                entradas);
-
-            GraficoSaidas.ConfigurarHierarquico(
-                "SAÍDAS (DESPESAS)",
-                Color.FromArgb(255, 255, 85, 85),
-                saidas);
-        }
-
-        private void CarregarGraficosOrcamentoAno()
-        {
-            if (GraficoOrcamentoPlanejadoReceitas == null ||
-                GraficoOrcamentoPlanejadoDespesas == null ||
-                GraficoOrcamentoRealizadoReceitas == null ||
-                GraficoOrcamentoRealizadoDespesas == null)
-                return;
-
-            int anoAtual = DateTime.Today.Year;
-            TxtTituloOrcamentoPlanejadoAno.Text = $"[ ORÇAMENTO PLANEJADO // ANO {anoAtual} ]";
-            TxtTituloOrcamentoRealizadoAno.Text = $"[ ORÇAMENTO REALIZADO // ANO {anoAtual} ]";
-
-            var planReceitas = DashboardGraficosService.ObterOrcamentoPlanejadoAnoCorrente("C");
-            var planDespesas = DashboardGraficosService.ObterOrcamentoPlanejadoAnoCorrente("D");
-            var realReceitas = DashboardGraficosService.ObterOrcamentoRealizadoAnoCorrente("C");
-            var realDespesas = DashboardGraficosService.ObterOrcamentoRealizadoAnoCorrente("D");
-
-            GraficoOrcamentoPlanejadoReceitas.ConfigurarHierarquico(
-                $"RECEITAS PLANEJADAS ({anoAtual})",
-                Color.FromArgb(255, 51, 153, 255),
-                planReceitas);
-
-            GraficoOrcamentoPlanejadoDespesas.ConfigurarHierarquico(
-                $"DESPESAS PLANEJADAS ({anoAtual})",
-                Color.FromArgb(255, 255, 85, 85),
-                planDespesas);
-
-            GraficoOrcamentoRealizadoReceitas.ConfigurarHierarquico(
-                $"RECEITAS REALIZADAS ({anoAtual})",
-                Color.FromArgb(255, 0, 255, 102),
-                realReceitas);
-
-            GraficoOrcamentoRealizadoDespesas.ConfigurarHierarquico(
-                $"DESPESAS REALIZADAS ({anoAtual})",
-                Color.FromArgb(255, 255, 112, 67),
-                realDespesas);
-        }
-
-        private void CarregarGraficoSaldoContas()
-        {
-            if (GraficoSaldoContas == null)
-                return;
-
-            var saldosContas = DashboardGraficosService.ObterSaldoPorContaCorrente();
-
-            GraficoSaldoContas.ConfigurarHierarquico(
-                "SALDO POR CONTA CORRENTE",
-                Color.FromArgb(255, 0, 255, 102),
-                saldosContas);
         }
 
         private void CboPeriodoGraficos_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -294,6 +401,42 @@ namespace ContaMobi
         {
             CarregarGraficosMovimentacao();
         }
+
+        #endregion
+
+        #region Bloco 4: Orçamento Planejado (Ano Corrente)
+
+        private void CarregarGraficosOrcamentoAno()
+        {
+            if (GraficoOrcamentoPlanejadoReceitas == null ||
+                GraficoOrcamentoPlanejadoDespesas == null)
+                return;
+
+            try
+            {
+                int anoAtual = DateTime.Today.Year;
+                TxtTituloOrcamentoPlanejadoAno.Text = $"[ ORÇAMENTO PLANEJADO // ANO {anoAtual} ]";
+
+                var planReceitas = DashboardGraficosService.ObterOrcamentoPlanejadoAnoCorrente("C");
+                var planDespesas = DashboardGraficosService.ObterOrcamentoPlanejadoAnoCorrente("D");
+
+                GraficoOrcamentoPlanejadoReceitas.ConfigurarHierarquico(
+                    $"RECEITAS PLANEJADAS ({anoAtual})",
+                    Color.FromArgb(255, 51, 153, 255),
+                    planReceitas);
+
+                GraficoOrcamentoPlanejadoDespesas.ConfigurarHierarquico(
+                    $"DESPESAS PLANEJADAS ({anoAtual})",
+                    Color.FromArgb(255, 255, 85, 85),
+                    planDespesas);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERRO GRAFICOS ORCAMENTO]: {ex.Message}");
+            }
+        }
+
+        #endregion
 
         private void TxtDataGrafico_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -317,8 +460,6 @@ namespace ContaMobi
             }
             _formatandoDataGrafico = false;
         }
-
-        #endregion
 
         private void MenuButton_Click(object sender, RoutedEventArgs e)
         {
@@ -357,14 +498,19 @@ namespace ContaMobi
                     MainContentFrame.Visibility = Visibility.Visible;
                     MainContentFrame.Navigate(typeof(EntidadesPage));
                 }
-
                 else if (modulo == "CAD_BANDEIRAS" || modulo == "BANDEIRAS")
                 {
                     PainelDashboard.Visibility = Visibility.Collapsed;
                     MainContentFrame.Visibility = Visibility.Visible;
                     MainContentFrame.Navigate(typeof(BandeirasPage));
                 }
-
+                else if (modulo == "CAD_CARTOES" || modulo == "CARTOES" || modulo == "CARTOES_CREDITO")
+                {
+                    TxtModuloAtual.Text = "> MODULO: CADASTRO DE CARTOES DE CREDITO";
+                    PainelDashboard.Visibility = Visibility.Collapsed;
+                    MainContentFrame.Visibility = Visibility.Visible;
+                    MainContentFrame.Navigate(typeof(CartoesCreditoPage));
+                }
                 else if (modulo == "MOV_LANCAMENTOS" || modulo == "LANCAMENTOS")
                 {
                     PainelDashboard.Visibility = Visibility.Collapsed;
@@ -388,9 +534,14 @@ namespace ContaMobi
                     PainelDashboard.Visibility = Visibility.Collapsed;
                     MainContentFrame.Visibility = Visibility.Visible;
                     MainContentFrame.Navigate(typeof(OrcamentosPage));
-
                 }
-               
+                else if (modulo == "FLUXO_CAIXA" || modulo == "FLUXOCAIXA")
+                {
+                    TxtModuloAtual.Text = "> MODULO: FLUXO DE CAIXA PROJETADO";
+                    PainelDashboard.Visibility = Visibility.Collapsed;
+                    MainContentFrame.Visibility = Visibility.Visible;
+                    MainContentFrame.Navigate(typeof(FluxoCaixaPage));
+                }
                 else
                 {
                     PainelDashboard.Visibility = Visibility.Collapsed;

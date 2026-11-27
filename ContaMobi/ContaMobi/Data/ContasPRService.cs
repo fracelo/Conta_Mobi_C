@@ -102,7 +102,7 @@ namespace ContaMobi.Data
                     numerodocumento TEXT NULL,
                     criado_em TEXT NULL,
                     updated_at TEXT NULL,
-                    CONSTRAINT FK_contas_pr_parcelas_contas_pr FOREIGN KEY (contaspruuid) REFERENCES contas_pr (contaspruuid) ON DELETE CASCADE
+                    CONSTRAINT FK_contas_pr_parcelas_contas_pr FOREIGN KEY (contaspruuid) REFERENCES contas_pr (contaspruuid) ON DELETE NO ACTION
                 );
 
                 CREATE INDEX IF NOT EXISTS idx_contas_pr_parcelas_lote ON contas_pr_parcelas (loteuuid, numero_parcela);
@@ -179,6 +179,43 @@ namespace ContaMobi.Data
                 TotalEmAberto = totalAberto,
                 Registros = lista
             };
+        }
+
+        /// <summary>
+        /// Verifica se já existe algum título do mesmo Tipo ("R" ou "P") com o mesmo Número de Documento.
+        /// Ignora registros pertencentes ao mesmo LoteUuid (para permitir edição de parcelamentos).
+        /// </summary>
+        public static List<ContaPR> VerificarDocumentoDuplicado(
+            string tipo,
+            string? numeroDocumento,
+            string? ignorarLoteUuid = null,
+            string? ignorarContasPRUuid = null)
+        {
+            if (string.IsNullOrWhiteSpace(numeroDocumento))
+                return new List<ContaPR>();
+
+            GarantirTabelasCriadas();
+
+            string docBusca = numeroDocumento.Trim();
+            string tipoBusca = (tipo ?? "P").Trim().ToUpperInvariant();
+
+            using var db = new AppDbContext();
+            var candidatos = db.ContasPR
+                .AsNoTracking()
+                .Include(c => c.Entidade)
+                .Where(c => c.Tipo == tipoBusca &&
+                            c.NumeroDocumento != null &&
+                            c.NumeroDocumento != string.Empty)
+                .OrderBy(c => c.DataVencimento)
+                .ThenBy(c => c.NumeroParcela)
+                .ToList();
+
+            return candidatos
+                .Where(c =>
+                    string.Equals(c.NumeroDocumento!.Trim(), docBusca, StringComparison.OrdinalIgnoreCase) &&
+                    (string.IsNullOrWhiteSpace(ignorarLoteUuid) || !string.Equals(c.LoteUuid, ignorarLoteUuid, StringComparison.OrdinalIgnoreCase)) &&
+                    (string.IsNullOrWhiteSpace(ignorarContasPRUuid) || !string.Equals(c.ContasPRUuid, ignorarContasPRUuid, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
         }
 
         /// <summary>
@@ -260,6 +297,7 @@ namespace ContaMobi.Data
             if (parcelasExistentesLote.Count > 0)
             {
                 db.ContasPRParcelas.RemoveRange(parcelasExistentesLote);
+                db.SaveChanges();
             }
 
             var idsMantidos = new HashSet<string>();
@@ -410,7 +448,7 @@ namespace ContaMobi.Data
         }
 
         /// <summary>
-        /// Retorna todas as parcelas futuras pertencentes ao mesmo lote (LoteUuid) da conta informada.
+        /// Retorna apenas as parcelas futuras pertencentes ao mesmo lote (LoteUuid) da conta informada.
         /// </summary>
         public static List<ContaPR> ObterParcelasFuturasRelacionadas(string contasPRUuid)
         {
@@ -436,8 +474,8 @@ namespace ContaMobi.Data
         }
 
         /// <summary>
-        /// Exclui a conta selecionada e, opcionalmente, todas as parcelas futuras relacionadas do mesmo lote.
-        /// Caso alguma parcela excluída já esteja baixada, estorna também o lançamento na Conta Corrente.
+        /// Exclui somente a conta selecionada por padrão (excluirFuturas = false).
+        /// Só exclui as parcelas futuras relacionadas se excluirFuturas = true.
         /// </summary>
         public static void ExcluirContaPR(string contasPRUuid, bool excluirFuturas = false)
         {
@@ -449,7 +487,10 @@ namespace ContaMobi.Data
 
             try
             {
-                var alvo = db.ContasPR.FirstOrDefault(c => c.ContasPRUuid == contasPRUuid);
+                var alvo = db.ContasPR
+                    .AsNoTracking()
+                    .FirstOrDefault(c => c.ContasPRUuid == contasPRUuid);
+
                 if (alvo == null)
                     return;
 
@@ -458,6 +499,7 @@ namespace ContaMobi.Data
                 if (excluirFuturas && !string.IsNullOrWhiteSpace(alvo.LoteUuid))
                 {
                     var futuras = db.ContasPR
+                        .AsNoTracking()
                         .Where(c => c.LoteUuid == alvo.LoteUuid &&
                                     c.ContasPRUuid != alvo.ContasPRUuid &&
                                     (c.NumeroParcela > alvo.NumeroParcela ||
@@ -467,16 +509,10 @@ namespace ContaMobi.Data
                     contasParaExcluir.AddRange(futuras);
                 }
 
-                var uuidsExcluir = contasParaExcluir.Select(c => c.ContasPRUuid).ToList();
-
-                var parcelasGrid = db.ContasPRParcelas
-                    .Where(p => uuidsExcluir.Contains(p.ContasPRUuid))
+                var uuidsExcluir = contasParaExcluir
+                    .Select(c => c.ContasPRUuid)
+                    .Distinct()
                     .ToList();
-
-                if (parcelasGrid.Count > 0)
-                {
-                    db.ContasPRParcelas.RemoveRange(parcelasGrid);
-                }
 
                 var contasAfetadas = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
 
@@ -521,8 +557,15 @@ namespace ContaMobi.Data
                     }
                 }
 
-                db.ContasPR.RemoveRange(contasParaExcluir);
                 db.SaveChanges();
+
+                foreach (var uuid in uuidsExcluir)
+                {
+                    db.Database.ExecuteSqlRaw("DELETE FROM contas_pr_parcelas WHERE contaspruuid = {0};", uuid);
+                    db.Database.ExecuteSqlRaw("DELETE FROM contas_pr WHERE contaspruuid = {0};", uuid);
+                }
+
+                db.ChangeTracker.Clear();
 
                 foreach (var kvp in contasAfetadas)
                 {

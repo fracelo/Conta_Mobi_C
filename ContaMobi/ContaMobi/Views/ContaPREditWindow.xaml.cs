@@ -437,12 +437,6 @@ namespace ContaMobi.Views
                 dataBase = DateTime.Today;
             }
 
-            if (_gradeParcelas.Count > 0 &&
-                DateTime.TryParseExact(_gradeParcelas[0].DataVencimentoTexto?.Trim() ?? "", "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime dataPrimeiraExistente))
-            {
-                dataBase = dataPrimeiraExistente;
-            }
-
             var uuidsExistentes = _gradeParcelas.ToDictionary(p => p.NumeroParcela, p => p.ContasPRUuid);
             string loteAtual = string.IsNullOrWhiteSpace(_contaPR.LoteUuid) ? Guid.NewGuid().ToString() : _contaPR.LoteUuid;
 
@@ -460,7 +454,8 @@ namespace ContaMobi.Views
 
             for (int i = 1; i <= qtdParcelas; i++)
             {
-                DateTime vencimento = dataBase.AddDays((i - 1) * intervaloDias);
+                // Parcela 01 = Data Base + Intervalo; Parcela 02 = Parcela 01 + Intervalo; etc.
+                DateTime vencimento = dataBase.AddDays(i * intervaloDias);
                 decimal valorDesta = (i == qtdParcelas) ? valorUltimaParcela : valorParcelaPadrao;
 
                 string contaUuidParcela = uuidsExistentes.TryGetValue(i, out string? idAntigo) && !string.IsNullOrWhiteSpace(idAntigo)
@@ -698,15 +693,10 @@ namespace ContaMobi.Views
         {
             TxtData_TextChanged(sender, e);
 
-            if (!_carregandoTela && _ehNovo && TxtDataLancamento.Text.Length == 10 &&
-                DateTime.TryParseExact(TxtDataLancamento.Text, "dd/MM/yyyy", _cultura, DateTimeStyles.None, out DateTime dtLanc))
+            if (!_carregandoTela && TxtDataLancamento.Text.Length == 10 &&
+                DateTime.TryParseExact(TxtDataLancamento.Text, "dd/MM/yyyy", _cultura, DateTimeStyles.None, out _))
             {
-                if (_gradeParcelas.Count > 0)
-                {
-                    _gradeParcelas[0].DataVencimento = dtLanc;
-                    _gradeParcelas[0].DataVencimentoTexto = dtLanc.ToString("dd/MM/yyyy");
-                    RecalcularGradeAutomaticamente();
-                }
+                RecalcularGradeAutomaticamente();
             }
         }
 
@@ -768,7 +758,7 @@ namespace ContaMobi.Views
 
         #region Salvar e Excluir
 
-        private void BtnSalvar_Click(object sender, RoutedEventArgs e)
+        private async void BtnSalvar_Click(object sender, RoutedEventArgs e)
         {
             TxtMensagem.Visibility = Visibility.Collapsed;
 
@@ -854,6 +844,49 @@ namespace ContaMobi.Views
                 {
                     ExibirMensagem($"> [ERRO] O valor da parcela {p.NumeroFormatado} deve ser maior que zero.", true);
                     return;
+                }
+            }
+
+            // Verifica duplicidade do Número do Documento apenas dentro do mesmo Tipo ("R" ou "P")
+            if (!string.IsNullOrWhiteSpace(numeroDocumento))
+            {
+                var duplicados = ContasPRService.VerificarDocumentoDuplicado(
+                    tipo: _contaPR.Tipo,
+                    numeroDocumento: numeroDocumento,
+                    ignorarLoteUuid: _ehNovo ? null : _contaPR.LoteUuid,
+                    ignorarContasPRUuid: _ehNovo ? null : _contaPR.ContasPRUuid);
+
+                if (duplicados.Count > 0)
+                {
+                    string nomeModulo = _contaPR.Tipo == "R" ? "Contas a Receber" : "Contas a Pagar";
+                    var linhasResumo = duplicados
+                        .Take(5)
+                        .Select(d => $"• Venc: {d.DataVencimentoFormatada} | {d.ValorFormatado} — {d.Descricao} ({d.NomeEntidade}) [{d.StatusTexto}]");
+
+                    string listaTexto = string.Join("\n", linhasResumo);
+                    if (duplicados.Count > 5)
+                    {
+                        listaTexto += $"\n... e mais {duplicados.Count - 5} registro(s).";
+                    }
+
+                    var dialogDup = new ContentDialog
+                    {
+                        Title = "Documento já cadastrado",
+                        Content = $"Já existe(m) {duplicados.Count} lançamento(s) em {nomeModulo} com o documento \"{numeroDocumento}\":\n\n" +
+                                  $"{listaTexto}\n\n" +
+                                  "Deseja continuar e salvar mesmo assim?",
+                        PrimaryButtonText = "Sim, continuar",
+                        CloseButtonText = "Não, revisar",
+                        DefaultButton = ContentDialogButton.Close,
+                        XamlRoot = this.Content.XamlRoot
+                    };
+
+                    var resposta = await dialogDup.ShowAsync();
+                    if (resposta != ContentDialogResult.Primary)
+                    {
+                        TxtNumeroDocumento.Focus(FocusState.Programmatic);
+                        return;
+                    }
                 }
             }
 
