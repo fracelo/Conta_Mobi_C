@@ -25,6 +25,7 @@
     <None Remove="Views\FluxoCaixaPage.xaml" />
     <None Remove="Views\OrcamentoEditWindow.xaml" />
     <None Remove="Views\OrcamentosPage.xaml" />
+    <None Remove="Views\SobrePage.xaml" />
     <None Remove="Views\TransferenciaWindow.xaml" />
   </ItemGroup>
 
@@ -111,6 +112,12 @@
     <Content Update="Assets\AppIcon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Views\SobrePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>

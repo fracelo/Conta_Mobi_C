@@ -11,6 +11,140 @@ using System.Runtime.CompilerServices;
 
 namespace ContaMobi.Models
 {
+    [Table("planos")]
+    public class Plano
+    {
+        [Key]
+        [MaxLength(36)]
+        [Column("planouuid")]
+        public string PlanoUuid { get; set; } = Guid.NewGuid().ToString();
+
+        [Required]
+        [MaxLength(100)]
+        [Column("nome")]
+        public string Nome { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        [Column("codigo")]
+        public string? Codigo { get; set; }
+
+        [Column("valor", TypeName = "decimal(15,2)")]
+        public decimal Valor { get; set; } = 0.00m;
+
+        [Column("valor_anual_parcela", TypeName = "decimal(15,2)")]
+        public decimal ValorAnualParcela { get; set; } = 0.00m;
+
+        [Column("valor_anual_total", TypeName = "decimal(15,2)")]
+        public decimal ValorAnualTotal { get; set; } = 0.00m;
+
+        [Column("limite_transacoes")]
+        public int? LimiteTransacoes { get; set; }
+
+        [Column("limite_bancos")]
+        public int? LimiteBancos { get; set; } = 3;
+
+        [Column("limite_contas")]
+        public int? LimiteContas { get; set; } = 3;
+
+        [Column("limite_cartoes")]
+        public int? LimiteCartoes { get; set; } = 0;
+
+        [Column("acesso_contas_pagar")]
+        public bool AcessoContasPagar { get; set; } = true;
+
+        [Column("acesso_contas_receber")]
+        public bool AcessoContasReceber { get; set; } = true;
+
+        [Column("acesso_orcamento")]
+        public bool AcessoOrcamento { get; set; } = false;
+
+        [Column("acesso_fluxo_caixa")]
+        public bool AcessoFluxoCaixa { get; set; } = false;
+
+        [Column("ordem_exibicao")]
+        public short OrdemExibicao { get; set; } = 1;
+
+        [Column("criado_em")]
+        public DateTime? CriadoEm { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [NotMapped]
+        public string ValorMensalFormatado => Valor.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public string ValorAnualParcelaFormatado => ValorAnualParcela.ToString("C2", new CultureInfo("pt-BR"));
+
+        [NotMapped]
+        public string ValorAnualTotalFormatado => ValorAnualTotal.ToString("C2", new CultureInfo("pt-BR"));
+
+        public override string ToString() => Nome ?? string.Empty;
+    }
+
+    [Table("usuarios")]
+    public class Usuario
+    {
+        [Key]
+        [MaxLength(36)]
+        [Column("usuariouuid")]
+        public string UsuarioUuid { get; set; } = string.Empty;
+
+        [MaxLength(36)]
+        [Column("planouuid")]
+        public string? PlanoUuid { get; set; }
+
+        [Required]
+        [MaxLength(150)]
+        [Column("email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(150)]
+        [Column("nomecompleto")]
+        public string NomeCompleto { get; set; } = string.Empty;
+
+        [MaxLength(20)]
+        [Column("cpf")]
+        public string? Cpf { get; set; }
+
+        [MaxLength(30)]
+        [Column("celular")]
+        public string? Celular { get; set; }
+
+        [MaxLength(30)]
+        [Column("sexo")]
+        public string? Sexo { get; set; }
+
+        [Column("datanascimento")]
+        public DateTime? DataNascimento { get; set; }
+
+        [Column("datavencimento")]
+        public DateTime? DataVencimento { get; set; }
+
+        [MaxLength(20)]
+        [Column("ciclo_cobranca")]
+        public string? CicloCobranca { get; set; } = "gratis";
+
+        [MaxLength(100)]
+        [Column("mp_payment_id")]
+        public string? MpPaymentId { get; set; }
+
+        [Column("criado_em")]
+        public DateTime? CriadoEm { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey("PlanoUuid")]
+        public virtual Plano? Plano { get; set; }
+
+        [NotMapped]
+        public bool AssinaturaVencida =>
+            DataVencimento.HasValue &&
+            DataVencimento.Value.Date < DateTime.Today &&
+            !string.Equals(CicloCobranca, "gratis", StringComparison.OrdinalIgnoreCase);
+
+        public override string ToString() => NomeCompleto ?? Email;
+    }
+
     [Table("Bancos")]
     public class Banco
     {
@@ -942,6 +1076,14 @@ namespace ContaMobi.Models
         [Column("limite_atual", TypeName = "decimal(15,2)")]
         public decimal LimiteAtual { get; set; } = 0.00m;
 
+        [Column("taxa_juros_rotativo", TypeName = "decimal(15,4)")]
+        public decimal TaxaJurosRotativo { get; set; } = 0.00m;
+
+        [Required]
+        [MaxLength(1)]
+        [Column("tipo_taxa_juros")]
+        public string TipoTaxaJuros { get; set; } = "M";
+
         [MaxLength(10)]
         [Column("cor_hex")]
         public string CorHex { get; set; } = "#008552";
@@ -993,6 +1135,44 @@ namespace ContaMobi.Models
 
         [NotMapped]
         public string LimiteAtualCor => LimiteAtual > 0m ? "#00FF66" : "#FF5555";
+
+        [NotMapped]
+        public decimal TaxaMensalEfetivaDecimal
+        {
+            get
+            {
+                if (TaxaJurosRotativo <= 0m)
+                    return 0m;
+
+                if (string.Equals(TipoTaxaJuros, "A", StringComparison.OrdinalIgnoreCase))
+                {
+                    double baseAnual = 1.0 + (double)(TaxaJurosRotativo / 100m);
+                    double mensal = Math.Pow(baseAnual, 1.0 / 12.0) - 1.0;
+                    return (decimal)mensal;
+                }
+
+                return TaxaJurosRotativo / 100m;
+            }
+        }
+
+        [NotMapped]
+        public decimal TaxaMensalEfetivaPercentual => TaxaMensalEfetivaDecimal * 100m;
+
+        [NotMapped]
+        public string JurosRotativoFormatado
+        {
+            get
+            {
+                if (TaxaJurosRotativo <= 0m)
+                    return "0,00% a.m.";
+
+                string unidade = string.Equals(TipoTaxaJuros, "A", StringComparison.OrdinalIgnoreCase)
+                    ? "a.a."
+                    : "a.m.";
+
+                return $"{TaxaJurosRotativo.ToString("N2", new CultureInfo("pt-BR"))}% {unidade}";
+            }
+        }
 
         [NotMapped]
         public string CicloFormatado => $"Fecha dia {DiaFechamento:D2} • Vence dia {DiaVencimento:D2}";

@@ -5,10 +5,12 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using ContaMobi.Data;
 using ContaMobi.Models;
+using ContaMobi.Services;
 using ContaMobi.Views;
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Windows.Graphics;
 using Windows.UI;
 
@@ -51,7 +53,48 @@ namespace ContaMobi
 
             CarregarResumoInicial();
 
-            _ = ContaMobi.Services.BancoSyncService.SincronizarBancosSeVazioAsync();
+            _ = BancoSyncService.SincronizarBancosSeVazioAsync();
+            _ = SincronizarPlanoCabecalhoAsync();
+        }
+
+        private async Task SincronizarPlanoCabecalhoAsync()
+        {
+            try
+            {
+                var perm = await PlanoUsuarioSyncService.SincronizarPlanosEUsuarioAsync();
+
+                this.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (TxtPlanoUsuario == null)
+                        return;
+
+                    string nomeExibir = perm.PlanoNome.ToUpperInvariant();
+                    if (perm.PlanoVencido)
+                    {
+                        TxtPlanoUsuario.Text = $"PLANO: {nomeExibir} [VENCIDO]";
+                        TxtPlanoUsuario.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 85, 85));
+                    }
+                    else if (string.Equals(perm.PlanoCodigo, "pro", StringComparison.OrdinalIgnoreCase))
+                    {
+                        TxtPlanoUsuario.Text = $"PLANO: {nomeExibir}";
+                        TxtPlanoUsuario.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 255, 102));
+                    }
+                    else if (string.Equals(perm.PlanoCodigo, "intermediario", StringComparison.OrdinalIgnoreCase))
+                    {
+                        TxtPlanoUsuario.Text = $"PLANO: {nomeExibir}";
+                        TxtPlanoUsuario.Foreground = new SolidColorBrush(Color.FromArgb(255, 51, 153, 255));
+                    }
+                    else
+                    {
+                        TxtPlanoUsuario.Text = $"PLANO: {nomeExibir}";
+                        TxtPlanoUsuario.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 204, 0));
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERRO SYNC PLANO]: {ex.Message}");
+            }
         }
 
         private void CarregarResumoInicial()
@@ -67,7 +110,6 @@ namespace ContaMobi
 
                     TxtStatusBanco.Text = $"> [OK] SQLite conectado! Bancos: {totalBancos} | Categorias: {totalCategorias} | Contas: {totalContas}";
 
-                    // 1. Calcula o Saldo Consolidado em Contas (Saldo Inicial + Créditos - Débitos até hoje)
                     decimal saldoInicialTotal = contas.Sum(c => c.SaldoInicial);
                     DateTime hojeFim = DateTime.Today.AddDays(1).AddTicks(-1);
 
@@ -95,7 +137,6 @@ namespace ContaMobi
                             : new SolidColorBrush(Color.FromArgb(255, 255, 85, 85));
                     }
 
-                    // 2. Carrega o resumo do orçamento do mês atual (Planejado x Realizado)
                     int anoAtual = DateTime.Today.Year;
                     int mesAtual = DateTime.Today.Month;
 
@@ -127,7 +168,6 @@ namespace ContaMobi
                 }
             }
 
-            // 3. Carrega cada bloco de gráficos na nova ordem definida
             CarregarGraficoSaldoContas();
             CarregarGraficosContasPR();
             CarregarGraficosMovimentacao();
@@ -542,6 +582,15 @@ namespace ContaMobi
                     MainContentFrame.Visibility = Visibility.Visible;
                     MainContentFrame.Navigate(typeof(FluxoCaixaPage));
                 }
+
+                else if (modulo == "SOBRE")
+                {
+                    TxtModuloAtual.Text = "> MODULO: SOBRE O SISTEMA & ASSINATURA";
+                    PainelDashboard.Visibility = Visibility.Collapsed;
+                    MainContentFrame.Visibility = Visibility.Visible;
+                    MainContentFrame.Navigate(typeof(SobrePage));
+                }
+
                 else
                 {
                     PainelDashboard.Visibility = Visibility.Collapsed;

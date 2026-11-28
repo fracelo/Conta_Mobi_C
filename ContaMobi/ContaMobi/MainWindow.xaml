@@ -30,6 +30,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20" VerticalAlignment="Center">
+                    <TextBlock x:Name="TxtPlanoUsuario" Text="PLANO: VERIFICANDO..." FontSize="13" FontWeight="Bold" Foreground="#FFCC00"/>
                     <TextBlock x:Name="TxtDataSistema" Text="DATA: --/--/----" FontSize="13" Foreground="#00CC55"/>
                     <TextBlock Text="STATUS: [ONLINE]" FontSize="13" FontWeight="Bold"/>
                 </StackPanel>
@@ -75,29 +76,32 @@
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="30"/>
                             <Button Content="  - Bandeiras Cartao" Click="MenuButton_Click" Tag="CAD_BANDEIRAS"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="30"/>
-                            <Button Content="  - Cartoes de Credito" Click="MenuButton_Click" Tag="CAD_CARTOES"
+                            <Button x:Name="BtnNavCartoes" Content="  - Cartoes de Credito" Click="MenuButton_Click" Tag="CAD_CARTOES"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="30"/>
 
                             <!-- MOVIMENTO -->
                             <TextBlock Text="&gt; MOVIMENTO" FontSize="11" FontWeight="Bold" Foreground="#00AA44" Margin="4,8,0,2"/>
                             <Button Content="  - Lancamento Contas" Click="MenuButton_Click" Tag="MOV_LANCAMENTOS"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="30"/>
-                            <Button Content="  - Contas a Receber" Click="MenuButton_Click" Tag="MOV_RECEBER"
+                            <Button x:Name="BtnNavReceber" Content="  - Contas a Receber" Click="MenuButton_Click" Tag="MOV_RECEBER"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="30"/>
-                            <Button Content="  - Contas a Pagar" Click="MenuButton_Click" Tag="MOV_PAGAR"
+                            <Button x:Name="BtnNavPagar" Content="  - Contas a Pagar" Click="MenuButton_Click" Tag="MOV_PAGAR"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="30"/>
 
                             <!-- ORÇAMENTO E FLUXO DE CAIXA -->
                             <TextBlock Text="&gt; PLANEJAMENTO" FontSize="11" FontWeight="Bold" Foreground="#00AA44" Margin="4,8,0,2"/>
-                            <Button Content="[F6] ORCAMENTO" Click="MenuButton_Click" Tag="ORCAMENTO"
+                            <Button x:Name="BtnNavOrcamento" Content="[F6] ORCAMENTO" Click="MenuButton_Click" Tag="ORCAMENTO"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="32"/>
-                            <Button Content="[F7] FLUXO DE CAIXA" Click="MenuButton_Click" Tag="FLUXO_CAIXA"
+                            <Button x:Name="BtnNavFluxoCaixa" Content="[F7] FLUXO DE CAIXA" Click="MenuButton_Click" Tag="FLUXO_CAIXA"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="32"/>
                         </StackPanel>
                     </ScrollViewer>
 
+                    <!-- RODAPÉ DO MENU -->
                     <StackPanel Grid.Row="2" Spacing="4" Margin="0,8,0,0">
                         <TextBlock Text="------------------------" FontSize="11" Foreground="#006622" HorizontalAlignment="Center"/>
+                        <Button x:Name="BtnNavSobre" Content="[F12] SOBRE / PLANO" Click="MenuButton_Click" Tag="SOBRE"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="32"/>
                         <Button x:Name="BtnSair" Content="[ESC] ENCERRAR SESSAO" Click="BtnSair_Click"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="34"/>
                     </StackPanel>

@@ -1,13 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using ContaMobi.Models;
 using System;
-using System.Data.Common;
 using System.IO;
 
 namespace ContaMobi.Data
 {
     public class AppDbContext : DbContext
     {
+        private static readonly object _syncMigracao = new();
+        private static bool _colunasVerificadas = false;
+
+        public DbSet<Plano> Planos { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Banco> Bancos { get; set; }
         public DbSet<Categoria> Categorias { get; set; }
         public DbSet<ContaCorrente> ContasCorrentes { get; set; }
@@ -19,91 +24,133 @@ namespace ContaMobi.Data
         public DbSet<LancamentoConta> LancamentosConta { get; set; }
         public DbSet<ContaPR> ContasPR { get; set; }
         public DbSet<ContaPRParcela> ContasPRParcelas { get; set; }
-
-        // Módulo de Cartões de Crédito
         public DbSet<Bandeira> Bandeiras { get; set; }
         public DbSet<CartaoCredito> CartoesCredito { get; set; }
         public DbSet<FaturaCartao> FaturasCartao { get; set; }
         public DbSet<LancamentoCartao> LancamentosCartao { get; set; }
 
-        public string DbPath { get; }
-
-        private static bool _schemaVerificado = false;
-
         public AppDbContext()
         {
-            string pastaLocal = Path.Combine(
+            GarantirColunasUmaVez();
+        }
+
+        public static string ObterCaminhoBancoSqlite()
+        {
+            string pastaApp = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "ContaMobi");
 
-            if (!Directory.Exists(pastaLocal))
+            if (!Directory.Exists(pastaApp))
             {
-                Directory.CreateDirectory(pastaLocal);
+                Directory.CreateDirectory(pastaApp);
             }
 
-            DbPath = Path.Combine(pastaLocal, "contamobi.db");
-
-            if (!_schemaVerificado)
-            {
-                _schemaVerificado = true;
-                GarantirColunasAtualizadas();
-            }
-        }
-
-        private void GarantirColunasAtualizadas()
-        {
-            try
-            {
-                if (!File.Exists(DbPath))
-                    return;
-
-                using var conn = Database.GetDbConnection();
-                conn.Open();
-
-                GarantirColunaSqlite(conn, "lancamentos_contas", "numerodocumento", "TEXT NULL");
-                GarantirColunaSqlite(conn, "contas_pr", "numerodocumento", "TEXT NULL");
-                GarantirColunaSqlite(conn, "contas_pr_parcelas", "numerodocumento", "TEXT NULL");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MIGRACAO SQLITE]: {ex.Message}");
-            }
-        }
-
-        private static void GarantirColunaSqlite(DbConnection conn, string tabela, string coluna, string definicao)
-        {
-            bool tabelaExiste = false;
-            bool possuiColuna = false;
-
-            using (var cmdCheck = conn.CreateCommand())
-            {
-                cmdCheck.CommandText = $"PRAGMA table_info('{tabela}');";
-                using var reader = cmdCheck.ExecuteReader();
-                while (reader.Read())
-                {
-                    tabelaExiste = true;
-                    string nomeColuna = reader["name"]?.ToString() ?? string.Empty;
-                    if (string.Equals(nomeColuna, coluna, StringComparison.OrdinalIgnoreCase))
-                    {
-                        possuiColuna = true;
-                        break;
-                    }
-                }
-            }
-
-            if (tabelaExiste && !possuiColuna)
-            {
-                using var cmdAlter = conn.CreateCommand();
-                cmdAlter.CommandText = $"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao};";
-                cmdAlter.ExecuteNonQuery();
-            }
+            return Path.Combine(pastaApp, "contamobi.db");
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (!optionsBuilder.IsConfigured)
+            string caminhoBanco = ObterCaminhoBancoSqlite();
+            optionsBuilder.UseSqlite($"Data Source={caminhoBanco}");
+        }
+
+        private static void GarantirColunasUmaVez()
+        {
+            if (_colunasVerificadas)
+                return;
+
+            lock (_syncMigracao)
             {
-                optionsBuilder.UseSqlite($"Data Source={DbPath}");
+                if (_colunasVerificadas)
+                    return;
+
+                string caminhoBanco = ObterCaminhoBancoSqlite();
+                if (!File.Exists(caminhoBanco))
+                    return;
+
+                AplicarColunasNoSqlite(caminhoBanco);
+                _colunasVerificadas = true;
+            }
+        }
+
+        public void GarantirColunasAtualizadas()
+        {
+            lock (_syncMigracao)
+            {
+                string caminhoBanco = ObterCaminhoBancoSqlite();
+                if (!File.Exists(caminhoBanco))
+                    return;
+
+                AplicarColunasNoSqlite(caminhoBanco);
+                _colunasVerificadas = true;
+            }
+        }
+
+        private static void AplicarColunasNoSqlite(string caminhoBanco)
+        {
+            try
+            {
+                using var conn = new SqliteConnection($"Data Source={caminhoBanco}");
+                conn.Open();
+
+                GarantirColunaSqlite(conn, "lancamentos_contas", "transferencia_uuid", "TEXT NULL");
+
+                GarantirColunaSqlite(conn, "contas_pr", "loteuuid", "TEXT NOT NULL DEFAULT ''");
+                GarantirColunaSqlite(conn, "contas_pr", "valor_base", "NUMERIC(15, 2) NOT NULL DEFAULT 0.00");
+                GarantirColunaSqlite(conn, "contas_pr", "modo_parcelamento", "TEXT NOT NULL DEFAULT 'R'");
+                GarantirColunaSqlite(conn, "contas_pr", "numero_parcela", "INTEGER NOT NULL DEFAULT 1");
+                GarantirColunaSqlite(conn, "contas_pr", "total_parcelas", "INTEGER NOT NULL DEFAULT 1");
+                GarantirColunaSqlite(conn, "contas_pr", "intervalo_dias", "INTEGER NOT NULL DEFAULT 30");
+                GarantirColunaSqlite(conn, "contas_pr", "lancamento_baixa_uuid", "TEXT NULL");
+
+                GarantirColunaSqlite(conn, "cartoes_credito", "taxa_juros_rotativo", "NUMERIC(15, 4) NOT NULL DEFAULT 0.0000");
+                GarantirColunaSqlite(conn, "cartoes_credito", "tipo_taxa_juros", "TEXT NOT NULL DEFAULT 'M'");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERRO GARANTIR COLUNAS SQLITE]: {ex.Message}");
+            }
+        }
+
+        private static void GarantirColunaSqlite(SqliteConnection conn, string tabela, string coluna, string definicaoSql)
+        {
+            try
+            {
+                using (var cmdTabela = conn.CreateCommand())
+                {
+                    cmdTabela.CommandText = "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND lower(name) = lower(@tabela);";
+                    cmdTabela.Parameters.AddWithValue("@tabela", tabela);
+                    long existeTabela = Convert.ToInt64(cmdTabela.ExecuteScalar() ?? 0L);
+                    if (existeTabela == 0)
+                        return;
+                }
+
+                bool colunaExiste = false;
+                using (var cmdCheck = conn.CreateCommand())
+                {
+                    cmdCheck.CommandText = $"PRAGMA table_info(\"{tabela}\");";
+                    using var reader = cmdCheck.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        string nomeColuna = reader["name"]?.ToString() ?? string.Empty;
+                        if (string.Equals(nomeColuna, coluna, StringComparison.OrdinalIgnoreCase))
+                        {
+                            colunaExiste = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!colunaExiste)
+                {
+                    using var cmdAlter = conn.CreateCommand();
+                    cmdAlter.CommandText = $"ALTER TABLE \"{tabela}\" ADD COLUMN \"{coluna}\" {definicaoSql};";
+                    cmdAlter.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERRO ALTER TABLE {tabela}.{coluna}]: {ex.Message}");
             }
         }
 
@@ -111,271 +158,197 @@ namespace ContaMobi.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Categorias (Auto-relacionamento Pai -> Filhos)
+            modelBuilder.Entity<Plano>(entity =>
+            {
+                entity.HasKey(e => e.PlanoUuid);
+                entity.Property(e => e.Valor).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.ValorAnualParcela).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.ValorAnualTotal).HasColumnType("decimal(15,2)");
+                entity.HasIndex(e => e.Codigo).IsUnique();
+            });
+
+            modelBuilder.Entity<Usuario>(entity =>
+            {
+                entity.HasKey(e => e.UsuarioUuid);
+                entity.HasOne(e => e.Plano)
+                      .WithMany()
+                      .HasForeignKey(e => e.PlanoUuid)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<Banco>(entity =>
+            {
+                entity.HasKey(e => e.CodigoBanco);
+            });
+
             modelBuilder.Entity<Categoria>(entity =>
             {
-                entity.HasKey(c => c.CategoriaUuid);
-
-                entity.HasOne(c => c.CategoriaPai)
-                      .WithMany(c => c.Subcategorias)
-                      .HasForeignKey(c => c.PaiUuid)
+                entity.HasKey(e => e.CategoriaUuid);
+                entity.HasOne(e => e.CategoriaPai)
+                      .WithMany(e => e.Subcategorias)
+                      .HasForeignKey(e => e.PaiUuid)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Saldos de Contas Correntes
+            modelBuilder.Entity<ContaCorrente>(entity =>
+            {
+                entity.HasKey(e => e.ContaUuid);
+                entity.Property(e => e.SaldoInicial).HasColumnType("decimal(15,2)");
+                entity.HasOne(e => e.Banco)
+                      .WithMany()
+                      .HasForeignKey(e => e.CodigoBanco)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
             modelBuilder.Entity<SaldoContaCorrente>(entity =>
             {
-                entity.ToTable("saldo_contas_correntes");
-                entity.HasKey(s => s.SaldoId);
-
-                entity.HasIndex(s => new { s.ContaUuid, s.Data })
-                      .IsUnique()
-                      .HasDatabaseName("idx_saldo_conta_data");
-
-                entity.HasOne(s => s.ContaCorrente)
+                entity.HasKey(e => e.SaldoId);
+                entity.Property(e => e.SaldoInicial).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.TotalCredito).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.TotalDebito).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.SaldoFinal).HasColumnType("decimal(15,2)");
+                entity.HasIndex(e => new { e.ContaUuid, e.Data }).IsUnique();
+                entity.HasOne(e => e.ContaCorrente)
                       .WithMany()
-                      .HasForeignKey(s => s.ContaUuid)
+                      .HasForeignKey(e => e.ContaUuid)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Entidades
-            modelBuilder.Entity<Entidade>(entity =>
-            {
-                entity.ToTable("entidades");
-                entity.HasKey(e => e.EntidadeUuid);
-
-                entity.HasMany(e => e.Contatos)
-                      .WithOne(c => c.Entidade)
-                      .HasForeignKey(c => c.EntidadeUuid)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // Contatos
-            modelBuilder.Entity<Contato>(entity =>
-            {
-                entity.ToTable("contatos");
-                entity.HasKey(c => c.ContatoUuid);
-            });
-
-            // Lançamentos de Contas Correntes
-            modelBuilder.Entity<LancamentoConta>(entity =>
-            {
-                entity.ToTable("lancamentos_contas");
-                entity.HasKey(l => l.LancamentoUuid);
-
-                entity.HasIndex(l => new { l.ContaUuid, l.DataLancamento })
-                      .HasDatabaseName("idx_lancamentos_conta_data");
-
-                entity.HasOne(l => l.ContaCorrente)
-                      .WithMany()
-                      .HasForeignKey(l => l.ContaUuid)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(l => l.Categoria)
-                      .WithMany()
-                      .HasForeignKey(l => l.CategoriaUuid)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(l => l.Entidade)
-                      .WithMany()
-                      .HasForeignKey(l => l.EntidadeUuid)
-                      .OnDelete(DeleteBehavior.SetNull);
-            });
-
-            // Contas a Pagar e a Receber (contas_pr)
-            modelBuilder.Entity<ContaPR>(entity =>
-            {
-                entity.ToTable("contas_pr");
-                entity.HasKey(c => c.ContasPRUuid);
-
-                entity.HasIndex(c => new { c.Tipo, c.DataVencimento })
-                      .HasDatabaseName("idx_contas_pr_tipo_vencimento");
-
-                entity.HasIndex(c => c.LoteUuid)
-                      .HasDatabaseName("idx_contas_pr_lote");
-
-                entity.HasOne(c => c.ContaCorrente)
-                      .WithMany()
-                      .HasForeignKey(c => c.ContaUuid)
-                      .OnDelete(DeleteBehavior.SetNull);
-
-                entity.HasOne(c => c.Categoria)
-                      .WithMany()
-                      .HasForeignKey(c => c.CategoriaUuid)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(c => c.Entidade)
-                      .WithMany()
-                      .HasForeignKey(c => c.EntidadeUuid)
-                      .OnDelete(DeleteBehavior.SetNull);
-            });
-
-            // Parcelas / Grid salvo de Contas PR (contas_pr_parcelas)
-            modelBuilder.Entity<ContaPRParcela>(entity =>
-            {
-                entity.ToTable("contas_pr_parcelas");
-                entity.HasKey(p => p.ParcelaUuid);
-
-                entity.HasIndex(p => new { p.LoteUuid, p.NumeroParcela })
-                      .HasDatabaseName("idx_contas_pr_parcelas_lote");
-            });
-
-            // Orçamentos Mensais (orcamentos)
             modelBuilder.Entity<Orcamento>(entity =>
             {
-                entity.ToTable("orcamentos");
-                entity.HasKey(o => o.OrcamentoUuid);
-
-                entity.HasIndex(o => new { o.Ano, o.Mes, o.CategoriaUuid })
-                      .IsUnique()
-                      .HasDatabaseName("ix_orcamentos_ano_mes_cat");
-
-                entity.HasOne(o => o.Categoria)
+                entity.HasKey(e => e.OrcamentoUuid);
+                entity.Property(e => e.ValorPlanejado).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.ValorRealizado).HasColumnType("decimal(15,2)");
+                entity.HasIndex(e => new { e.UsuarioUuid, e.CategoriaUuid, e.Ano, e.Mes }).IsUnique();
+                entity.HasOne(e => e.Categoria)
                       .WithMany()
-                      .HasForeignKey(o => o.CategoriaUuid)
+                      .HasForeignKey(e => e.CategoriaUuid)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Entidade>(entity =>
+            {
+                entity.HasKey(e => e.EntidadeUuid);
+            });
+
+            modelBuilder.Entity<Contato>(entity =>
+            {
+                entity.HasKey(e => e.ContatoUuid);
+                entity.HasOne(e => e.Entidade)
+                      .WithMany(e => e.Contatos)
+                      .HasForeignKey(e => e.EntidadeUuid)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // =================================================================
-            // MÓDULO DE CARTÕES DE CRÉDITO
-            // =================================================================
-
-            // Bandeiras de Cartão (bandeiras)
-            modelBuilder.Entity<Bandeira>(entity =>
+            modelBuilder.Entity<LancamentoConta>(entity =>
             {
-                entity.ToTable("bandeiras");
-                entity.HasKey(b => b.BandeiraUuid);
-
-                entity.HasIndex(b => b.UsuarioUuid)
-                      .HasDatabaseName("idx_bandeiras_usuario");
-
-                var dataSeed = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                entity.HasData(
-                    new Bandeira
-                    {
-                        BandeiraUuid = "11111111-1111-1111-1111-111111111101",
-                        UsuarioUuid = null,
-                        DescricaoBandeira = "Visa",
-                        IconeBandeira = "ms-appx:///Assets/Bandeiras/visa.png",
-                        Ativo = true,
-                        CriadoEm = dataSeed,
-                        UpdatedAt = dataSeed
-                    },
-                    new Bandeira
-                    {
-                        BandeiraUuid = "11111111-1111-1111-1111-111111111102",
-                        UsuarioUuid = null,
-                        DescricaoBandeira = "Mastercard",
-                        IconeBandeira = "ms-appx:///Assets/Bandeiras/mastercard.png",
-                        Ativo = true,
-                        CriadoEm = dataSeed,
-                        UpdatedAt = dataSeed
-                    },
-                    new Bandeira
-                    {
-                        BandeiraUuid = "11111111-1111-1111-1111-111111111103",
-                        UsuarioUuid = null,
-                        DescricaoBandeira = "Elo",
-                        IconeBandeira = "ms-appx:///Assets/Bandeiras/elo.png",
-                        Ativo = true,
-                        CriadoEm = dataSeed,
-                        UpdatedAt = dataSeed
-                    },
-                    new Bandeira
-                    {
-                        BandeiraUuid = "11111111-1111-1111-1111-111111111104",
-                        UsuarioUuid = null,
-                        DescricaoBandeira = "American Express",
-                        IconeBandeira = "ms-appx:///Assets/Bandeiras/amex.png",
-                        Ativo = true,
-                        CriadoEm = dataSeed,
-                        UpdatedAt = dataSeed
-                    },
-                    new Bandeira
-                    {
-                        BandeiraUuid = "11111111-1111-1111-1111-111111111105",
-                        UsuarioUuid = null,
-                        DescricaoBandeira = "Hipercard",
-                        IconeBandeira = "ms-appx:///Assets/Bandeiras/hipercard.png",
-                        Ativo = true,
-                        CriadoEm = dataSeed,
-                        UpdatedAt = dataSeed
-                    }
-                );
-            });
-
-            // Cartões de Crédito (cartoes_credito)
-            modelBuilder.Entity<CartaoCredito>(entity =>
-            {
-                entity.ToTable("cartoes_credito");
-                entity.HasKey(c => c.CartaoUuid);
-
-                entity.HasIndex(c => c.UsuarioUuid)
-                      .HasDatabaseName("idx_cartoes_credito_usuario");
-
-                entity.HasOne(c => c.Bandeira)
+                entity.HasKey(e => e.LancamentoUuid);
+                entity.Property(e => e.Valor).HasColumnType("decimal(15,2)");
+                entity.HasIndex(e => new { e.ContaUuid, e.DataLancamento });
+                entity.HasOne(e => e.ContaCorrente)
                       .WithMany()
-                      .HasForeignKey(c => c.BandeiraUuid)
+                      .HasForeignKey(e => e.ContaUuid)
                       .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(c => c.ContaCorrente)
+                entity.HasOne(e => e.Categoria)
                       .WithMany()
-                      .HasForeignKey(c => c.ContaUuid)
+                      .HasForeignKey(e => e.CategoriaUuid)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Entidade)
+                      .WithMany()
+                      .HasForeignKey(e => e.EntidadeUuid)
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // Faturas de Cartão (faturas_cartao)
-            modelBuilder.Entity<FaturaCartao>(entity =>
+            modelBuilder.Entity<ContaPR>(entity =>
             {
-                entity.ToTable("faturas_cartao");
-                entity.HasKey(f => f.FaturaUuid);
-
-                entity.HasIndex(f => new { f.CartaoUuid, f.MesAnoFatura })
-                      .IsUnique()
-                      .HasDatabaseName("idx_faturas_cartao_mesano");
-
-                entity.HasIndex(f => new { f.UsuarioUuid, f.VencimentoFatura })
-                      .HasDatabaseName("idx_faturas_cartao_vencimento");
-
-                entity.HasOne(f => f.CartaoCredito)
-                      .WithMany(c => c.Faturas)
-                      .HasForeignKey(f => f.CartaoUuid)
+                entity.HasKey(e => e.ContasPRUuid);
+                entity.Property(e => e.ValorBase).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.Valor).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.Multa).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.Juro).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.Acrescimo).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.Desconto).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.ValorPago).HasColumnType("decimal(15,2)");
+                entity.HasIndex(e => new { e.Tipo, e.DataVencimento });
+                entity.HasIndex(e => e.LoteUuid);
+                entity.HasOne(e => e.ContaCorrente)
+                      .WithMany()
+                      .HasForeignKey(e => e.ContaUuid)
+                      .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(e => e.Categoria)
+                      .WithMany()
+                      .HasForeignKey(e => e.CategoriaUuid)
                       .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Entidade)
+                      .WithMany()
+                      .HasForeignKey(e => e.EntidadeUuid)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // Lançamentos de Cartão (lancamentos_cartao)
+            modelBuilder.Entity<ContaPRParcela>(entity =>
+            {
+                entity.HasKey(e => e.ParcelaUuid);
+                entity.Property(e => e.ValorBase).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.ValorParcela).HasColumnType("decimal(15,2)");
+                entity.HasIndex(e => e.LoteUuid);
+                entity.HasIndex(e => e.ContasPRUuid);
+            });
+
+            modelBuilder.Entity<Bandeira>(entity =>
+            {
+                entity.HasKey(e => e.BandeiraUuid);
+            });
+
+            modelBuilder.Entity<CartaoCredito>(entity =>
+            {
+                entity.HasKey(e => e.CartaoUuid);
+                entity.Property(e => e.LimiteTotal).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.LimiteAtual).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.TaxaJurosRotativo).HasColumnType("decimal(15,4)");
+                entity.HasOne(e => e.Bandeira)
+                      .WithMany()
+                      .HasForeignKey(e => e.BandeiraUuid)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.ContaCorrente)
+                      .WithMany()
+                      .HasForeignKey(e => e.ContaUuid)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<FaturaCartao>(entity =>
+            {
+                entity.HasKey(e => e.FaturaUuid);
+                entity.Property(e => e.TotalFatura).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.TotalPago).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.SaldoFatura).HasColumnType("decimal(15,2)");
+                entity.HasIndex(e => new { e.CartaoUuid, e.MesAnoFatura }).IsUnique();
+                entity.HasOne(e => e.CartaoCredito)
+                      .WithMany(c => c.Faturas)
+                      .HasForeignKey(e => e.CartaoUuid)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
             modelBuilder.Entity<LancamentoCartao>(entity =>
             {
-                entity.ToTable("lancamentos_cartao");
-                entity.HasKey(l => l.LancamentoCartaoUuid);
-
-                entity.HasIndex(l => new { l.CartaoUuid, l.DataLancamento })
-                      .HasDatabaseName("idx_lancamentos_cartao_data");
-
-                entity.HasIndex(l => l.FaturaUuid)
-                      .HasDatabaseName("idx_lancamentos_cartao_fatura");
-
-                entity.HasIndex(l => l.GrupoParcelamentoUuid)
-                      .HasDatabaseName("idx_lancamentos_cartao_grupo");
-
-                entity.HasOne(l => l.CartaoCredito)
+                entity.HasKey(e => e.LancamentoCartaoUuid);
+                entity.Property(e => e.ValorParcela).HasColumnType("decimal(15,2)");
+                entity.HasIndex(e => e.FaturaUuid);
+                entity.HasIndex(e => e.GrupoParcelamentoUuid);
+                entity.HasOne(e => e.CartaoCredito)
                       .WithMany()
-                      .HasForeignKey(l => l.CartaoUuid)
+                      .HasForeignKey(e => e.CartaoUuid)
                       .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(l => l.FaturaCartao)
+                entity.HasOne(e => e.FaturaCartao)
                       .WithMany(f => f.Lancamentos)
-                      .HasForeignKey(l => l.FaturaUuid)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(l => l.Categoria)
+                      .HasForeignKey(e => e.FaturaUuid)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Categoria)
                       .WithMany()
-                      .HasForeignKey(l => l.CategoriaUuid)
+                      .HasForeignKey(e => e.CategoriaUuid)
                       .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(l => l.Entidade)
+                entity.HasOne(e => e.Entidade)
                       .WithMany()
-                      .HasForeignKey(l => l.EntidadeUuid)
+                      .HasForeignKey(e => e.EntidadeUuid)
                       .OnDelete(DeleteBehavior.SetNull);
             });
         }

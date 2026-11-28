@@ -27,7 +27,7 @@ namespace ContaMobi.Views
         {
             this.InitializeComponent();
             UIThemeHelper.AplicarBarraTituloRetro(this);
-            this.AppWindow.Resize(new SizeInt32(780, 620));
+            this.AppWindow.Resize(new SizeInt32(780, 680));
 
             _cartao = cartao;
             _ehNovo = ehNovo;
@@ -44,6 +44,7 @@ namespace ContaMobi.Views
 
             _carregandoTela = false;
             AtualizarPreviewLimite();
+            AtualizarPreviewTaxaMensal();
         }
 
         private void CarregarCombos()
@@ -114,6 +115,20 @@ namespace ContaMobi.Views
             _limiteTotalDigitado = Math.Max(0m, _cartao.LimiteTotal);
             TxtLimiteTotal.Text = _limiteTotalDigitado > 0m ? _limiteTotalDigitado.ToString("N2", _cultura) : string.Empty;
 
+            TxtTaxaJuros.Text = _cartao.TaxaJurosRotativo > 0m
+                ? _cartao.TaxaJurosRotativo.ToString("N2", _cultura)
+                : "0,00";
+
+            string tagTipoTaxa = string.Equals(_cartao.TipoTaxaJuros, "A", StringComparison.OrdinalIgnoreCase) ? "A" : "M";
+            foreach (ComboBoxItem item in CboTipoTaxaJuros.Items)
+            {
+                if (item.Tag?.ToString() == tagTipoTaxa)
+                {
+                    CboTipoTaxaJuros.SelectedItem = item;
+                    break;
+                }
+            }
+
             string tagAtivo = _cartao.Ativo ? "S" : "N";
             foreach (ComboBoxItem item in CboAtivo.Items)
             {
@@ -166,6 +181,72 @@ namespace ContaMobi.Views
             _formatandoTexto = false;
 
             AtualizarPreviewLimite();
+        }
+
+        private void TxtTaxaJuros_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_formatandoTexto) return;
+            AtualizarPreviewTaxaMensal();
+        }
+
+        private void CboTipoTaxaJuros_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_carregandoTela) return;
+            AtualizarPreviewTaxaMensal();
+        }
+
+        private void AtualizarPreviewTaxaMensal()
+        {
+            if (TxtTaxaMensalEquivalente == null) return;
+
+            TentarObterTaxaJuros(out decimal taxa, out string tipo);
+            decimal mensalPct = CalcularTaxaMensalPercentual(taxa, tipo);
+
+            if (mensalPct <= 0m)
+            {
+                TxtTaxaMensalEquivalente.Text = "0,00% ao mês (sem juros configurados)";
+            }
+            else if (string.Equals(tipo, "A", StringComparison.OrdinalIgnoreCase))
+            {
+                TxtTaxaMensalEquivalente.Text = $"{mensalPct.ToString("N2", _cultura)}% ao mês (equivalente a {taxa.ToString("N2", _cultura)}% ao ano)";
+            }
+            else
+            {
+                TxtTaxaMensalEquivalente.Text = $"{mensalPct.ToString("N2", _cultura)}% ao mês";
+            }
+        }
+
+        private bool TentarObterTaxaJuros(out decimal taxa, out string tipo)
+        {
+            taxa = 0m;
+            tipo = (CboTipoTaxaJuros?.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "M";
+            string raw = (TxtTaxaJuros?.Text ?? string.Empty).Trim();
+
+            if (string.IsNullOrEmpty(raw))
+                return true;
+
+            raw = raw.Replace("%", string.Empty).Trim();
+
+            if (decimal.TryParse(raw, NumberStyles.Any, _cultura, out taxa) ||
+                decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out taxa))
+            {
+                return taxa >= 0m;
+            }
+
+            return false;
+        }
+
+        private static decimal CalcularTaxaMensalPercentual(decimal taxa, string tipo)
+        {
+            if (taxa <= 0m) return 0m;
+
+            if (string.Equals(tipo, "A", StringComparison.OrdinalIgnoreCase))
+            {
+                double mensal = Math.Pow(1.0 + (double)(taxa / 100m), 1.0 / 12.0) - 1.0;
+                return (decimal)(mensal * 100.0);
+            }
+
+            return taxa;
         }
 
         private void AtualizarPreviewLimite()
@@ -276,6 +357,13 @@ namespace ContaMobi.Views
                 return;
             }
 
+            if (!TentarObterTaxaJuros(out decimal taxaJuros, out string tipoTaxa))
+            {
+                ExibirMensagem("> [ERRO] Taxa de juros invalida. Informe um numero maior ou igual a zero (ex: 17,00).", true);
+                TxtTaxaJuros.Focus(FocusState.Programmatic);
+                return;
+            }
+
             string corHex = TxtCorHex.Text.Trim();
             if (!TentarConverterHex(corHex, out _))
             {
@@ -301,6 +389,8 @@ namespace ContaMobi.Views
                 _cartao.DiaFechamento = diaFechamento;
                 _cartao.DiaVencimento = diaVencimento;
                 _cartao.LimiteTotal = _limiteTotalDigitado;
+                _cartao.TaxaJurosRotativo = taxaJuros;
+                _cartao.TipoTaxaJuros = tipoTaxa;
                 _cartao.CorHex = corHex.StartsWith("#") ? corHex.ToUpperInvariant() : $"#{corHex.ToUpperInvariant()}";
                 _cartao.Ativo = ativo;
 

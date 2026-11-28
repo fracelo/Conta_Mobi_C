@@ -29,116 +29,150 @@
 
                 <!-- FORMULÁRIO PRINCIPAL -->
                 <Border Grid.Row="2" BorderBrush="#005522" BorderThickness="1" Background="#020802" Padding="14">
-                    <StackPanel Spacing="12">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
 
-                        <!-- LINHA 1: DESCRIÇÃO + ÚLTIMOS 4 DÍGITOS -->
-                        <Grid ColumnSpacing="14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="170"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock Text="DESCRICAO / APELIDO DO CARTAO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
-                                <TextBox x:Name="TxtDescricao" MaxLength="100" PlaceholderText="Ex: Nubank, Itau Click, Bradesco Visa..." Height="34"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="1" Spacing="4">
-                                <TextBlock Text="ULTIMOS 4 DIGITOS:" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
-                                <TextBox x:Name="TxtUltimosDigitos" MaxLength="4" PlaceholderText="Ex: 4829" Height="34"
-                                         TextChanged="TxtApenasDigitos_TextChanged"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- LINHA 2: BANDEIRA + CONTA CORRENTE PADRÃO -->
-                        <Grid ColumnSpacing="14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock Text="BANDEIRA (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
-                                <ComboBox x:Name="CboBandeira" HorizontalAlignment="Stretch" Height="34"
-                                          PlaceholderText="Selecione a bandeira..."/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="1" Spacing="4">
-                                <TextBlock Text="CONTA CORRENTE PADRAO (PAGAMENTO FATURA):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
-                                <ComboBox x:Name="CboContaCorrente" HorizontalAlignment="Stretch" Height="34"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- LINHA 3: DIA FECHAMENTO + DIA VENCIMENTO + LIMITE TOTAL + SITUAÇÃO -->
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="135"/>
-                                <ColumnDefinition Width="135"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="140"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock Text="DIA FECHAMENTO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
-                                <TextBox x:Name="TxtDiaFechamento" MaxLength="2" Text="1" PlaceholderText="1 a 31" Height="34"
-                                         TextChanged="TxtApenasDigitos_TextChanged"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="1" Spacing="4">
-                                <TextBlock Text="DIA VENCIMENTO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
-                                <TextBox x:Name="TxtDiaVencimento" MaxLength="2" Text="10" PlaceholderText="1 a 31" Height="34"
-                                         TextChanged="TxtApenasDigitos_TextChanged"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="2" Spacing="4">
-                                <TextBlock Text="LIMITE TOTAL (R$) (*):" FontSize="10" FontWeight="Bold" Foreground="#00FF66"/>
-                                <TextBox x:Name="TxtLimiteTotal" PlaceholderText="0,00" FontSize="14" FontWeight="Bold" Height="34"
-                                         TextChanged="TxtLimiteTotal_TextChanged"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="3" Spacing="4">
-                                <TextBlock Text="SITUACAO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
-                                <ComboBox x:Name="CboAtivo" HorizontalAlignment="Stretch" Height="34">
-                                    <ComboBoxItem Content="S - ATIVO" Tag="S" IsSelected="True"/>
-                                    <ComboBoxItem Content="N - INATIVO" Tag="N"/>
-                                </ComboBox>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- LINHA 4: COR DE IDENTIFICAÇÃO DO CARTÃO -->
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="COR DE IDENTIFICACAO VISUAL DO CARTAO:" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
-                            <Grid ColumnSpacing="10">
+                            <!-- LINHA 1: DESCRIÇÃO + ÚLTIMOS 4 DÍGITOS -->
+                            <Grid ColumnSpacing="14">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="130"/>
-                                    <ColumnDefinition Width="38"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="170"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="DESCRICAO / APELIDO DO CARTAO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <TextBox x:Name="TxtDescricao" MaxLength="100" PlaceholderText="Ex: Nubank, Itau Click, Bradesco Visa..." Height="34"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Text="ULTIMOS 4 DIGITOS:" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <TextBox x:Name="TxtUltimosDigitos" MaxLength="4" PlaceholderText="Ex: 4829" Height="34"
+                                             TextChanged="TxtApenasDigitos_TextChanged"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- LINHA 2: BANDEIRA + CONTA CORRENTE PADRÃO -->
+                            <Grid ColumnSpacing="14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- PALETA DE CORES RÁPIDAS -->
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <Button Width="28" Height="28" Padding="0" Background="#008552" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#008552" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Esmeralda (#008552)"/>
-                                    <Button Width="28" Height="28" Padding="0" Background="#00AA44" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#00AA44" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Verde Terminal (#00AA44)"/>
-                                    <Button Width="28" Height="28" Padding="0" Background="#1E293B" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#1E293B" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Black Grafite (#1E293B)"/>
-                                    <Button Width="28" Height="28" Padding="0" Background="#6D28D9" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#6D28D9" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Roxo (#6D28D9)"/>
-                                    <Button Width="28" Height="28" Padding="0" Background="#B91C1C" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#B91C1C" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Rubi (#B91C1C)"/>
-                                    <Button Width="28" Height="28" Padding="0" Background="#B45309" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#B45309" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Gold (#B45309)"/>
-                                    <Button Width="28" Height="28" Padding="0" Background="#0369A1" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#0369A1" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Azul Safira (#0369A1)"/>
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="BANDEIRA (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <ComboBox x:Name="CboBandeira" HorizontalAlignment="Stretch" Height="34"
+                                              PlaceholderText="Selecione a bandeira..."/>
                                 </StackPanel>
 
-                                <TextBox Grid.Column="1" x:Name="TxtCorHex" MaxLength="9" Text="#008552" PlaceholderText="#008552" Height="34"
-                                         TextChanged="TxtCorHex_TextChanged"/>
-
-                                <Border Grid.Column="2" x:Name="BorderPreviewCor" Height="34" CornerRadius="4"
-                                        Background="#008552" BorderBrush="#FFFFFF" BorderThickness="1"/>
-
-                                <TextBlock Grid.Column="3" Text="Escolha uma cor ao lado ou informe o codigo HEX"
-                                           FontSize="10" Foreground="#00AA44" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Text="CONTA CORRENTE PADRAO (PAGAMENTO FATURA):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <ComboBox x:Name="CboContaCorrente" HorizontalAlignment="Stretch" Height="34"/>
+                                </StackPanel>
                             </Grid>
-                        </StackPanel>
 
-                    </StackPanel>
+                            <!-- LINHA 3: DIA FECHAMENTO + DIA VENCIMENTO + LIMITE TOTAL + SITUAÇÃO -->
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="135"/>
+                                    <ColumnDefinition Width="135"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="140"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="DIA FECHAMENTO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <TextBox x:Name="TxtDiaFechamento" MaxLength="2" Text="1" PlaceholderText="1 a 31" Height="34"
+                                             TextChanged="TxtApenasDigitos_TextChanged"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Text="DIA VENCIMENTO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <TextBox x:Name="TxtDiaVencimento" MaxLength="2" Text="10" PlaceholderText="1 a 31" Height="34"
+                                             TextChanged="TxtApenasDigitos_TextChanged"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Text="LIMITE TOTAL (R$) (*):" FontSize="10" FontWeight="Bold" Foreground="#00FF66"/>
+                                    <TextBox x:Name="TxtLimiteTotal" PlaceholderText="0,00" FontSize="14" FontWeight="Bold" Height="34"
+                                             TextChanged="TxtLimiteTotal_TextChanged"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Spacing="4">
+                                    <TextBlock Text="SITUACAO (*):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                    <ComboBox x:Name="CboAtivo" HorizontalAlignment="Stretch" Height="34">
+                                        <ComboBoxItem Content="S - ATIVO" Tag="S" IsSelected="True"/>
+                                        <ComboBoxItem Content="N - INATIVO" Tag="N"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- LINHA 3B: JUROS PARA ROLAGEM DE SALDO (PAGAMENTO PARCIAL) -->
+                            <Border BorderBrush="#004411" BorderThickness="1" Background="#030D05" Padding="10">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="170"/>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="JUROS ROLAGEM (%):" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                        <TextBox x:Name="TxtTaxaJuros" MaxLength="8" Text="0,00" PlaceholderText="Ex: 17,00" Height="34"
+                                                 TextChanged="TxtTaxaJuros_TextChanged"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="PERIODICIDADE:" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                        <ComboBox x:Name="CboTipoTaxaJuros" HorizontalAlignment="Stretch" Height="34"
+                                                  SelectionChanged="CboTipoTaxaJuros_SelectionChanged">
+                                            <ComboBoxItem Content="ao mês" Tag="M" IsSelected="True"/>
+                                            <ComboBoxItem Content="ao ano" Tag="A"/>
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="TAXA MENSAL EQUIVALENTE (ROLAGEM):" FontSize="10" Foreground="#00AA44"/>
+                                        <TextBlock x:Name="TxtTaxaMensalEquivalente" Text="0,00% ao mês" FontSize="12" FontWeight="Bold" Foreground="#FFCC00"/>
+                                        <TextBlock Text="Usada no cálculo de juros e limite ao rolar saldo parcial." FontSize="10" Foreground="#669977"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- LINHA 4: COR DE IDENTIFICAÇÃO DO CARTÃO -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="COR DE IDENTIFICACAO VISUAL DO CARTAO:" FontSize="10" FontWeight="SemiBold" Foreground="#00FF66"/>
+                                <Grid ColumnSpacing="10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="38"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- PALETA DE CORES RÁPIDAS -->
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <Button Width="28" Height="28" Padding="0" Background="#008552" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#008552" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Esmeralda (#008552)"/>
+                                        <Button Width="28" Height="28" Padding="0" Background="#00AA44" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#00AA44" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Verde Terminal (#00AA44)"/>
+                                        <Button Width="28" Height="28" Padding="0" Background="#1E293B" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#1E293B" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Black Grafite (#1E293B)"/>
+                                        <Button Width="28" Height="28" Padding="0" Background="#6D28D9" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#6D28D9" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Roxo (#6D28D9)"/>
+                                        <Button Width="28" Height="28" Padding="0" Background="#B91C1C" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#B91C1C" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Rubi (#B91C1C)"/>
+                                        <Button Width="28" Height="28" Padding="0" Background="#B45309" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#B45309" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Gold (#B45309)"/>
+                                        <Button Width="28" Height="28" Padding="0" Background="#0369A1" BorderBrush="#FFFFFF" BorderThickness="1" Tag="#0369A1" Click="BtnCorPreset_Click" ToolTipService.ToolTip="Azul Safira (#0369A1)"/>
+                                    </StackPanel>
+
+                                    <TextBox Grid.Column="1" x:Name="TxtCorHex" MaxLength="9" Text="#008552" PlaceholderText="#008552" Height="34"
+                                             TextChanged="TxtCorHex_TextChanged"/>
+
+                                    <Border Grid.Column="2" x:Name="BorderPreviewCor" Height="34" CornerRadius="4"
+                                            Background="#008552" BorderBrush="#FFFFFF" BorderThickness="1"/>
+
+                                    <TextBlock Grid.Column="3" Text="Escolha uma cor ao lado ou informe o codigo HEX"
+                                               FontSize="10" Foreground="#00AA44" VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+
+                        </StackPanel>
+                    </ScrollViewer>
                 </Border>
 
                 <!-- RESUMO DE LIMITE DISPONÍVEL -->
